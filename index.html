@@ -360,14 +360,51 @@ table.order{width:100%;border-collapse:separate;border-spacing:0 8px;min-width:7
   .hx .hin{left:130px;width:142px;min-width:142px}
   .stepper input{width:40px}
 }
+/* Auth & accounts */
+body.locked .app{display:none}
+.auth{display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px 16px;
+  background:radial-gradient(100% 60% at 50% 0%,rgba(255,255,255,.14),transparent 70%),radial-gradient(120% 55% at 50% 112%,rgba(160,230,120,.45),transparent 65%),linear-gradient(175deg,#08401F,#136B33 55%,#2E9A4B)}
+body.locked .auth{display:flex}
+.auth-box{background:var(--surface);border-radius:22px;padding:28px 24px 22px;width:min(420px,100%);box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.auth-box .alogo{display:block;width:96px;margin:-4px auto 10px;padding:12px 16px;border-radius:18px;background:var(--grad);box-sizing:content-box}
+.auth-box h3{margin:0 0 4px;text-align:center;font-size:20px}
+.auth-box .sub{color:var(--muted);font-size:13.5px;margin:0 0 18px;text-align:center}
+.auth-box .fld{margin-bottom:12px}
+.auth-box .btn.primary{width:100%;padding:11px;font-size:15px;margin-top:4px}
+.auth-err{color:var(--down);font-size:13.5px;font-weight:600;min-height:20px;margin:2px 0 6px}
+.auth-note{font-size:12.5px;color:var(--muted);margin:14px 0 0;text-align:center}
+.chk{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted);margin:2px 0 8px}
+.who{border:0;text-align:left;background:rgba(0,40,15,.32);color:#fff;border-radius:12px;padding:9px 12px;font-size:12.5px;display:flex;align-items:center;gap:9px;min-width:0}
+.who b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who span{opacity:.75}
+.who .av{width:30px;height:30px;border-radius:50%;background:#C8FF8A;color:#0B4F27;display:grid;place-items:center;font-weight:800;flex:none}
+.who>div{min-width:0}
+.acc-me{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.acc-me .av{width:56px;height:56px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;font-weight:800;font-size:22px;flex:none}
+.acc-me .info{flex:1;min-width:200px}
+.acc-me .info b{display:block;font-size:17px;word-break:break-all}
+.acc-me .info>span{color:var(--muted);font-size:13.5px}
+.acc-add{display:grid;grid-template-columns:minmax(0,1fr) 170px auto;gap:10px;align-items:end}
+.acc-list{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.acc-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.acc-row .em{flex:1;min-width:180px;font-weight:600;word-break:break-all}
+.acc-row .em small{display:block;font-weight:500;color:var(--muted);font-size:12.5px}
+.badge{font-size:12px;font-weight:700;border-radius:99px;padding:2px 10px;background:var(--cell-empty);color:var(--muted)}
+.badge.admin{background:var(--g2);color:#fff}
+.badge.warn{background:#FEF3C7;color:#92400E}
+.badge.ok{background:#DCFCE7;color:#166534}
+.pw-hint{font-size:13px;color:var(--muted);margin:8px 0 0}
+@media (max-width:860px){.acc-add{grid-template-columns:1fr}}
 </style>
 </head>
-<body>
+<body class="locked">
+<div class="auth" id="auth"></div>
 <div class="app">
   <aside class="side">
     <div class="brand"><img src="assets/logo-anvi-trang.png" alt="ANVI"><small>Phát triển bản thân mỗi ngày</small></div>
     <nav class="nav" id="nav"></nav>
     <div class="side-foot">
+      <button class="who" id="who" title="Mở trang tài khoản"></button>
       <button class="mini-quote" id="miniQuote" title="Mở châm ngôn"></button>
       <div class="status" id="status" data-s="local"><i></i><span>Đang kết nối…</span></div>
     </div>
@@ -402,7 +439,8 @@ const TABS=[
  {id:'order',name:'Order vũ trụ',icon:'✨',sub:'Đặt hàng rõ ràng, đón nhận đủ đầy'},
  {id:'journal',name:'Nhật ký ngày',icon:'📔',sub:'Nhìn lại để tiến lên'},
  {id:'videos',name:'Video ý nghĩa',icon:'▶️',sub:'Thư viện video nuôi dưỡng Thân – Tâm – Tuệ'},
- {id:'quotes',name:'Châm ngôn & nguyên tắc',icon:'🔥',sub:'Ngọn lửa động lực mỗi khi mở trang'}];
+ {id:'quotes',name:'Châm ngôn & nguyên tắc',icon:'🔥',sub:'Ngọn lửa động lực mỗi khi mở trang'},
+ {id:'account',name:'Tài khoản',icon:'👤',sub:'Đăng nhập, mật khẩu và tài khoản người dùng'}];
 const ICONS={
  report:'<path d="M4 20V11M10 20V5M16 20v-8M21 20H3"/>',
  habits:'<path d="M12 21v-9"/><path d="M12 12C12 7.5 8.5 4.5 4 4.5c0 4.5 3.5 7.5 8 7.5z"/><path d="M12 14.5c0-4 3-6.5 7.5-6.5 0 4-3 6.5-7.5 6.5z"/>',
@@ -411,7 +449,8 @@ const ICONS={
  order:'<path d="M12 3l2 5.5 5.5 2-5.5 2L12 18l-2-5.5L4.5 10.5l5.5-2z"/><path d="M19 17v4M17 19h4"/>',
  journal:'<path d="M6 3.5h10.5a2.5 2.5 0 0 1 2.5 2.5v14.5H8.5A2.5 2.5 0 0 1 6 18z"/><path d="M6 18a2.5 2.5 0 0 1 2.5-2.5H19M10 8h5"/>',
  videos:'<rect x="3" y="5" width="18" height="14" rx="3.5"/><path d="M10 9.2l5 2.8-5 2.8z"/>',
- quotes:'<path d="M12 21.5c3.9 0 6.5-2.8 6.5-6.5 0-3.6-2.6-5.6-3.6-8.5-1 1.8-2 2.8-3 2.8 0-2-.8-4.2-2-5.3-.8 3.9-4.4 5.9-4.4 11 0 3.7 2.6 6.5 6.5 6.5z"/>'};
+ quotes:'<path d="M12 21.5c3.9 0 6.5-2.8 6.5-6.5 0-3.6-2.6-5.6-3.6-8.5-1 1.8-2 2.8-3 2.8 0-2-.8-4.2-2-5.3-.8 3.9-4.4 5.9-4.4 11 0 3.7 2.6 6.5 6.5 6.5z"/>',
+ account:'<circle cx="12" cy="8" r="4"/><path d="M4 20.5c1.2-4 4.3-6 8-6s6.8 2 8 6"/>'};
 const ico=id=>`<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[id]||''}</svg>`;
 const CATS={than:{name:'Thân',c:'var(--than)',ico:'💪'},tam:{name:'Tâm',c:'var(--tam)',ico:'❤️'},tue:{name:'Tuệ',c:'var(--tue)',ico:'🧠'}};
 const KCOLS=[{id:'kh',name:'Khách hàng',c:'var(--k1)',ico:'🤝'},{id:'dt',name:'Đối tác',c:'var(--k2)',ico:'🌿'},{id:'dn',name:'Đồng nghiệp',c:'var(--k3)',ico:'👥'},{id:'tg',name:'Thế giới',c:'var(--k4)',ico:'🌏'},{id:'gd',name:'Gia đình/bạn bè',c:'var(--k5)',ico:'🏡'}];
@@ -454,13 +493,20 @@ const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
 const weekStart=k=>{const d=parseKey(k);d.setDate(d.getDate()-((d.getDay()+6)%7));return keyOf(d)};
 
 /* ---------- State & persistence ---------- */
-const LS='anvi-v1',LS_OLD='pttb-v1';
+const LS_BASE='anvi-v1',LS_OLD='pttb-v1';
+let LS=LS_BASE, DOCP='';
 let S={config:null,months:{}};
 let cur=TODAY(), tab='habits', col=null, SAMPLE=null, sampleReady=false;
 const AIRES={};
-try{const raw=localStorage.getItem(LS)||localStorage.getItem(LS_OLD);if(raw)S=JSON.parse(raw)}catch(e){}
+/* Mỗi tài khoản có kho dữ liệu riêng: tài khoản chủ dùng khoá cũ (giữ dữ liệu sẵn có), tài khoản khác dùng khoá kèm id */
+function loadAccountData(acc){
+  LS=acc.owner?LS_BASE:LS_BASE+':'+acc.id;DOCP=acc.owner?'':'a'+acc.id+'_';
+  S={config:null,months:{}};
+  try{const raw=localStorage.getItem(LS)||(acc.owner?localStorage.getItem(LS_OLD):null);if(raw)S=JSON.parse(raw)}catch(e){}
+  S.config=normalizeConfig(S.config);S.months??={};
+}
 function normalizeConfig(c){c=c||DEFAULT_CONFIG();c.habits??=[];c.quotes??=[];c.karmaGoals??=[];c.videos??=[];if(c.popup===undefined)c.popup=true;return c}
-S.config=normalizeConfig(S.config);S.months??={};
+S.config=normalizeConfig(S.config);
 
 const getDay=k=>(S.months[k.slice(0,7)]?.days?.[k])||{};
 function editDay(k){const ym=k.slice(0,7);S.months[ym]??={days:{}};S.months[ym].days??={};S.months[ym].days[k]??={};dirty('m-'+ym);return S.months[ym].days[k]}
@@ -474,7 +520,7 @@ async function flush(){
   if(!col){pending.clear();setStatus('local');return}
   const names=[...pending];pending.clear();
   try{
-    for(const n of names){const body=n==='config'?S.config:S.months[n.slice(2)];if(body)await col.doc(n).set(JSON.parse(JSON.stringify(body)))}
+    for(const n of names){const body=n==='config'?S.config:S.months[n.slice(2)];if(body)await col.doc(DOCP+n).set(JSON.parse(JSON.stringify(body)))}
     setStatus('cloud');
   }catch(e){
     names.forEach(n=>pending.add(n));
@@ -539,6 +585,8 @@ function summaryCard(title,sub,inner){return `<div class="card" id="summary"><di
 /* ---------- Shell ---------- */
 function renderNav(){$('#nav').innerHTML=TABS.map(t=>`<button data-tab="${t.id}" ${t.id===tab?'aria-current="page"':''}><span class="ico">${ico(t.id)}</span>${t.name}</button>`).join('')}
 $('#nav').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;tab=b.dataset.tab;render();window.scrollTo({top:0})});
+$('#who').onclick=()=>{tab='account';render();window.scrollTo({top:0})};
+function renderWho(){if(!ME)return;$('#who').innerHTML=`<span class="av">${esc(ME.email[0].toUpperCase())}</span><div><b>${esc(ME.email)}</b><span>${ME.role==='admin'?'Quản trị viên':'Thành viên'}</span></div>`}
 $('#prevDay').onclick=()=>setDate(addDays(cur,-1));
 $('#nextDay').onclick=()=>setDate(addDays(cur,1));
 $('#todayBtn').onclick=()=>setDate(TODAY());
@@ -549,11 +597,11 @@ function setDate(k){cur=k;render()}
 function render(){
   renderNav();const t=TABS.find(x=>x.id===tab);
   window.AI_HOOK=null;
-  const noDate=['quotes','videos'].includes(tab);
+  const noDate=['quotes','videos','account'].includes(tab);
   $('#title').innerHTML=`<span class="tico">${ico(t.id)}</span>${t.name}<small>${noDate?t.sub:fmtLong(cur)+' · '+t.sub}</small>`;
   $('#datePick').value=cur;
   document.querySelector('.datebar').style.visibility=noDate?'hidden':'visible';
-  VIEWS[tab]();renderMiniQuote();
+  VIEWS[tab]();renderMiniQuote();renderWho();
 }
 function refreshSummary(){const b=$('#sumBody');if(b&&SUM[tab])b.innerHTML=SUM[tab]()}
 function renderMiniQuote(){const act=S.config.quotes.filter(q=>q.active);const q=act[(new Date().getDate())%Math.max(1,act.length)];
@@ -1123,33 +1171,153 @@ $('#popupOv').addEventListener('click',e=>{if(e.target.id==='popupOv')$('#popupO
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();$('#popupOv').classList.remove('open')}});
 function maybePopup(){let seen=false;try{seen=sessionStorage.getItem('anvi-pop')==='1';sessionStorage.setItem('anvi-pop','1')}catch(e){}if(!seen&&S.config.popup)showPopup()}
 
+/* ---------- 9. Tài khoản đăng nhập ---------- */
+/* Danh sách tài khoản lưu trên trình duyệt này; mật khẩu chỉ lưu dạng băm kèm muối. */
+const ACC_KEY='anvi-accounts',SESS_KEY='anvi-session',DEFAULT_PW='123456';
+let ME=null, syncToken=0;
+function loadAccounts(){try{const a=JSON.parse(localStorage.getItem(ACC_KEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+function saveAccounts(list){try{localStorage.setItem(ACC_KEY,JSON.stringify(list));return true}catch(e){toast('Không lưu được tài khoản trên trình duyệt này');return false}}
+const normEmail=e=>String(e||'').trim().toLowerCase();
+const validEmail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+function fallbackHash(str){let h1=0xdeadbeef,h2=0x41c6ce57;for(let i=0;i<str.length;i++){const c=str.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677)}
+  h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+  return (h2>>>0).toString(16).padStart(8,'0')+(h1>>>0).toString(16).padStart(8,'0')}
+async function hashPw(pw,salt,alg){
+  if(alg!=='f'&&window.crypto&&crypto.subtle){const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(salt+':'+pw));return{alg:'s',hash:[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('')}}
+  return{alg:'f',hash:fallbackHash(salt+':'+pw)}}
+async function setPassword(acc,pw){const salt=uid()+uid();const h=await hashPw(pw,salt);acc.salt=salt;acc.alg=h.alg;acc.hash=h.hash;acc.isDefault=pw===DEFAULT_PW}
+async function checkPassword(acc,pw){const h=await hashPw(pw,acc.salt,acc.alg);return h.hash===acc.hash}
+async function newAccount(email,role,owner){const a={id:uid()+uid(),email,role,owner:!!owner,created:TODAY()};await setPassword(a,DEFAULT_PW);return a}
+function rememberSession(id,remember){try{localStorage.removeItem(SESS_KEY);sessionStorage.removeItem(SESS_KEY);if(id)(remember?localStorage:sessionStorage).setItem(SESS_KEY,id)}catch(e){}}
+function sessionId(){try{return sessionStorage.getItem(SESS_KEY)||localStorage.getItem(SESS_KEY)}catch(e){return null}}
+
+function showAuth(msg){
+  document.body.classList.add('locked');closeModal();$('#popupOv').classList.remove('open');
+  const first=!loadAccounts().length;
+  $('#auth').innerHTML=`<form class="auth-box" id="authForm" novalidate>
+    <img class="alogo" src="${LOGO}" alt="ANVI">
+    <h3>${first?'Tạo tài khoản quản trị':'Đăng nhập ANVI'}</h3>
+    <p class="sub">${first?'Lần đầu sử dụng: nhập email để tạo tài khoản quản trị. Dữ liệu đang có trên trình duyệt này sẽ thuộc về tài khoản này.':'Phát triển bản thân mỗi ngày – Thân · Tâm · Tuệ'}</p>
+    <div class="fld"><label class="lb" for="auEmail">Email</label><input class="f" id="auEmail" type="email" autocomplete="username" placeholder="ban@email.com"></div>
+    ${first?`<p class="pw-hint">Mật khẩu mặc định: <b>${DEFAULT_PW}</b>. Bạn có thể đổi sau khi đăng nhập.</p>`:`<div class="fld"><label class="lb" for="auPw">Mật khẩu</label><input class="f" id="auPw" type="password" autocomplete="current-password" placeholder="••••••"></div>
+    <label class="chk"><input type="checkbox" id="auRem" checked> Ghi nhớ đăng nhập trên máy này</label>`}
+    <div class="auth-err" id="auErr" role="alert">${esc(msg||'')}</div>
+    <button class="btn primary" type="submit">${first?'Tạo tài khoản & vào ứng dụng':'Đăng nhập'}</button>
+    <p class="auth-note">${first?'Sau đó, vào mục <b>Tài khoản</b> trên menu để tạo tài khoản cho người khác.':'Quên mật khẩu? Nhờ quản trị viên đặt lại về mật khẩu mặc định.'}</p>
+  </form>`;
+  setTimeout(()=>$('#auEmail').focus(),30);
+  $('#authForm').onsubmit=async e=>{
+    e.preventDefault();const err=$('#auErr');const email=normEmail($('#auEmail').value);
+    if(!validEmail(email)){err.textContent='Email chưa đúng định dạng';$('#auEmail').focus();return}
+    const list=loadAccounts();
+    if(!list.length){const a=await newAccount(email,'admin',true);if(!saveAccounts([a]))return;rememberSession(a.id,true);enterApp(a);return}
+    const pw=$('#auPw').value;const a=list.find(x=>x.email===email);
+    if(!a||!pw||!(await checkPassword(a,pw))){err.textContent='Email hoặc mật khẩu không đúng';$('#auPw').select();return}
+    rememberSession(a.id,$('#auRem').checked);enterApp(a);
+  };
+}
+
+function enterApp(acc){
+  ME=acc;syncToken++;col=null;pending.clear();clearTimeout(saveTimer);
+  loadAccountData(acc);
+  cur=TODAY();tab='habits';for(const k in AIRES)delete AIRES[k];
+  document.body.classList.remove('locked');$('#auth').innerHTML='';
+  render();window.scrollTo({top:0});
+  setTimeout(maybePopup,400);
+  startSample();syncCloud(acc);
+  if(acc.isDefault)setTimeout(()=>{if(ME===acc&&!$('#modalOv').classList.contains('open'))pwForm(true)},250);
+}
+async function logout(){
+  clearTimeout(saveTimer);if(pending.size)await flush();
+  syncToken++;col=null;ME=null;rememberSession(null);
+  S={config:normalizeConfig(null),months:{}};
+  showAuth();toast('Đã đăng xuất');
+}
+
+function pwForm(suggest){
+  openModal(`<h3>${suggest?'Bạn có muốn đổi mật khẩu?':'Đổi mật khẩu'}</h3>
+   ${suggest?`<p class="sub">Tài khoản đang dùng mật khẩu mặc định <b>${DEFAULT_PW}</b>. Bạn có thể đổi ngay hoặc để sau – không bắt buộc.</p>`:''}
+   <div class="fld"><label class="lb" for="pwOld">Mật khẩu hiện tại</label><input class="f" id="pwOld" type="password" autocomplete="current-password" ${suggest?`value="${DEFAULT_PW}"`:''}></div>
+   <div class="fld"><label class="lb" for="pwNew">Mật khẩu mới (ít nhất 6 ký tự)</label><input class="f" id="pwNew" type="password" autocomplete="new-password"></div>
+   <div class="fld"><label class="lb" for="pwNew2">Nhập lại mật khẩu mới</label><input class="f" id="pwNew2" type="password" autocomplete="new-password"></div>
+   <div class="auth-err" id="pwErr" role="alert"></div>
+   <div class="row"><span class="spacer"></span><button class="btn" data-close>${suggest?'Để sau':'Huỷ'}</button><button class="btn primary" id="pwSave">Đổi mật khẩu</button></div>`);
+  setTimeout(()=>$(suggest?'#pwNew':'#pwOld').focus(),50);
+  $('#pwSave').onclick=async()=>{
+    const err=$('#pwErr'),o=$('#pwOld').value,n=$('#pwNew').value,n2=$('#pwNew2').value;
+    const list=loadAccounts();const a=list.find(x=>x.id===ME.id);if(!a){logout();return}
+    if(!(await checkPassword(a,o))){err.textContent='Mật khẩu hiện tại không đúng';$('#pwOld').select();return}
+    if(n.length<6){err.textContent='Mật khẩu mới cần ít nhất 6 ký tự';$('#pwNew').focus();return}
+    if(n!==n2){err.textContent='Hai lần nhập mật khẩu mới chưa khớp';$('#pwNew2').select();return}
+    await setPassword(a,n);if(!saveAccounts(list))return;ME=a;closeModal();if(tab==='account')render();toast('Đã đổi mật khẩu');
+  };
+}
+
+VIEWS.account=()=>{
+  const list=loadAccounts();const me=list.find(x=>x.id===ME.id)||ME;ME=me;const admin=me.role==='admin';
+  const badges=a=>`<span class="badge ${a.role==='admin'?'admin':''}">${a.role==='admin'?(a.owner?'Quản trị (chủ)':'Quản trị'):'Thành viên'}</span>${a.isDefault?'<span class="badge warn">Mật khẩu mặc định</span>':'<span class="badge ok">Đã đổi mật khẩu</span>'}`;
+  $('#view').innerHTML=`<div class="grid">
+   <div class="card"><div class="acc-me"><span class="av">${esc(me.email[0].toUpperCase())}</span>
+     <div class="info"><b>${esc(me.email)}</b><span>Tạo ngày ${fmtShortY(me.created||TODAY())}</span><div class="row" style="margin-top:6px">${badges(me)}</div></div>
+     <div class="row"><button class="btn primary" id="accPw">Đổi mật khẩu</button><button class="btn" id="accOut">Đăng xuất</button></div></div>
+     <p class="pw-hint">Mỗi tài khoản có dữ liệu riêng (thói quen, nhật ký, nghiệp, biết ơn, video, châm ngôn…), không lẫn với tài khoản khác. Đổi mật khẩu là tuỳ chọn.</p></div>
+   ${admin?`<div class="card"><div class="sec-title"><h3>👥 Tạo tài khoản đăng nhập</h3></div>
+     <p class="sub">Tài khoản mới đăng nhập bằng email, mật khẩu mặc định <b>${DEFAULT_PW}</b>. Người dùng có thể tự đổi mật khẩu sau khi vào.</p>
+     <form class="acc-add" id="accAdd" novalidate>
+       <div class="fld"><label class="lb" for="accEmail">Email</label><input class="f" id="accEmail" type="email" placeholder="nguoidung@email.com" autocomplete="off"></div>
+       <div class="fld"><label class="lb" for="accRole">Quyền</label><select class="f" id="accRole"><option value="member">Thành viên</option><option value="admin">Quản trị</option></select></div>
+       <button class="btn primary" type="submit">+ Tạo tài khoản</button>
+     </form>
+     <div class="acc-list" id="accList">${list.map(a=>`<div class="acc-row" data-acc="${a.id}">
+       <div class="em">${esc(a.email)}${a.id===me.id?' <small>(bạn)</small>':`<small>Tạo ngày ${fmtShortY(a.created||TODAY())}</small>`}</div>${badges(a)}
+       ${a.id===me.id||a.owner?'':`<button class="btn sm" data-act="reset">Đặt lại mật khẩu</button><button class="btn sm" data-act="del" aria-label="Xoá tài khoản ${esc(a.email)}">Xoá</button>`}</div>`).join('')}</div>
+     <p class="pw-hint">Tài khoản và dữ liệu được lưu trên trình duyệt của thiết bị này. Người dùng khác cần đăng nhập trên cùng thiết bị / trình duyệt.</p></div>`:''}
+  </div>`;
+  $('#accPw').onclick=()=>pwForm(false);
+  $('#accOut').onclick=logout;
+  if(!admin)return;
+  $('#accAdd').onsubmit=async e=>{e.preventDefault();const email=normEmail($('#accEmail').value);
+    if(!validEmail(email)){toast('Email chưa đúng định dạng');$('#accEmail').focus();return}
+    const l=loadAccounts();if(l.some(x=>x.email===email)){toast('Email này đã có tài khoản');$('#accEmail').select();return}
+    l.push(await newAccount(email,$('#accRole').value,false));if(!saveAccounts(l))return;render();toast(`Đã tạo tài khoản ${email} – mật khẩu ${DEFAULT_PW}`)};
+  $('#accList').onclick=async e=>{const b=e.target.closest('[data-act]');if(!b)return;const id=b.closest('[data-acc]').dataset.acc;
+    const l=loadAccounts();const a=l.find(x=>x.id===id);if(!a||a.owner||a.id===me.id)return;
+    if(b.dataset.act==='reset'){if(!(await ask(`Đặt lại mật khẩu của ${a.email} về ${DEFAULT_PW}?`,'Đặt lại')))return;await setPassword(a,DEFAULT_PW);saveAccounts(l);render();toast('Đã đặt lại mật khẩu về '+DEFAULT_PW)}
+    if(b.dataset.act==='del'){if(!(await ask(`Xoá tài khoản ${a.email} và toàn bộ dữ liệu của tài khoản này?`)))return;
+      saveAccounts(l.filter(x=>x.id!==id));try{localStorage.removeItem(LS_BASE+':'+id)}catch(e){}render();toast('Đã xoá tài khoản')}};
+};
+
 /* ---------- Boot ---------- */
-render();
-setTimeout(maybePopup,400);
-(async()=>{
-  const api=window.claude&&window.claude.use?window.claude:null;
-  if(api){api.use('sample').then(s=>{SAMPLE=s;sampleReady=true;if(window.AI_HOOK)AI_HOOK();}).catch(()=>{sampleReady=true})}
-  else sampleReady=true;
+const API=window.claude&&window.claude.use?window.claude:null;
+let sampleStarted=false;
+function startSample(){if(sampleStarted)return;sampleStarted=true;
+  if(API){API.use('sample').then(s=>{SAMPLE=s;sampleReady=true;if(window.AI_HOOK)AI_HOOK();}).catch(()=>{sampleReady=true})}
+  else sampleReady=true}
+async function syncCloud(acc){
+  const my=syncToken;
   try{
-    if(!api){setStatus('local');return}
-    const [db,user]=await Promise.all([api.use('db'),api.use('user')]);
+    if(!API){setStatus('local');return}
+    const [db,user]=await Promise.all([API.use('db'),API.use('user')]);
     if(!db||!user){setStatus('local');return}
     const id=await user.id();if(!id){setStatus('local');return}
     const c=db.collection('data/users/'+id);
     const snap=await c.limit(1000).get();
+    if(my!==syncToken)return;
+    const fresh={config:null,months:{}};let found=false;
+    snap.docs.forEach(d=>{if(!d.id.startsWith(DOCP))return;const n=d.id.slice(DOCP.length);const v=JSON.parse(JSON.stringify(d.data()||{}));
+      if(n==='config'){fresh.config=v;found=true}else if(n.startsWith('m-')){fresh.months[n.slice(2)]=v;found=true}});
     col=c;
-    if(snap.empty){pending.add('config');Object.keys(S.months).forEach(m=>pending.add('m-'+m));await flush()}
+    if(!found){pending.add('config');Object.keys(S.months).forEach(m=>pending.add('m-'+m));await flush()}
     else{
-      const fresh={config:null,months:{}};
-      snap.docs.forEach(d=>{const v=JSON.parse(JSON.stringify(d.data()||{}));if(d.id==='config')fresh.config=v;else if(d.id.startsWith('m-'))fresh.months[d.id.slice(2)]=v});
       for(const n of pending){if(n==='config')fresh.config=S.config;else fresh.months[n.slice(2)]=S.months[n.slice(2)]}
       fresh.config=normalizeConfig(fresh.config||S.config);
       S=fresh;saveLocal();
       const a=document.activeElement;if(!a||!$('#view').contains(a)||!/INPUT|TEXTAREA|SELECT/.test(a.tagName))render();
       setStatus(pending.size?'saving':'cloud');if(pending.size)flush();
     }
-  }catch(e){col=null;setStatus('local')}
-})();
+  }catch(e){if(my===syncToken){col=null;setStatus('local')}}
+}
+(()=>{const id=sessionId();const a=id&&loadAccounts().find(x=>x.id===id);if(a)enterApp(a);else{rememberSession(null);showAuth()}})();
 </script>
 </body>
 </html>

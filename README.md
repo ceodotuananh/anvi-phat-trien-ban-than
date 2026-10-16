@@ -12,6 +12,7 @@
 - **Nhật ký ngày**: làm tốt, chưa làm được, bài học, cảm xúc; AI tổng hợp và gợi ý định hướng.
 - **Video ý nghĩa**: kho video YouTube chia nhóm Thân, Tâm, Tuệ kèm tóm tắt.
 - **Châm ngôn & nguyên tắc sống**: banner động lực hiện popup khi mở trang.
+- **Tài khoản**: đăng nhập bằng email; quản trị viên tạo tài khoản cho người khác với mật khẩu mặc định `123456`, người dùng có thể đổi mật khẩu hoặc giữ nguyên. Mỗi tài khoản có dữ liệu riêng, không lẫn vào nhau.
 
 ## Cấu trúc
 
@@ -34,6 +35,13 @@ python3 -m http.server 8080
 
 Vào **Settings → Pages**, chọn nhánh `main`, thư mục `/ (root)` rồi bấm **Save**. Sau ít phút trang chạy tại
 `https://<tên-tài-khoản>.github.io/anvi-phat-trien-ban-than/`.
+
+## Tài khoản đăng nhập
+
+- Lần đầu mở ứng dụng: nhập email để tạo tài khoản quản trị (mật khẩu mặc định `123456`). Dữ liệu sẵn có trên trình duyệt thuộc về tài khoản này.
+- Vào mục **Tài khoản** trên menu để tạo tài khoản mới (quyền Thành viên hoặc Quản trị), đặt lại mật khẩu về `123456` hoặc xoá tài khoản.
+- Khi đăng nhập bằng mật khẩu mặc định, ứng dụng gợi ý đổi mật khẩu; có thể bấm "Để sau".
+- Danh sách tài khoản và dữ liệu lưu trên trình duyệt của thiết bị đang dùng, nên mọi người cần dùng chung thiết bị/trình duyệt. Đây là lớp tách dữ liệu giữa người dùng, không phải bảo mật máy chủ.
 
 ## Lưu trữ dữ liệu
 
