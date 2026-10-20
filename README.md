@@ -57,23 +57,21 @@ npm run dev                 # mở địa chỉ hiển thị trong terminal (th�
 
 Mỗi thói quen có tối đa một dòng cho mỗi ngày (ràng buộc duy nhất theo `user_id`, `habit_name`, `target_date`).
 
-## Đưa lên mạng
+## Đưa lên mạng bằng Vercel
 
-Ứng dụng là trang tĩnh sau khi build. Có hai cách, cả hai đều cần hai biến `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` (vì Vite nhúng giá trị vào bản build, nên đổi biến thì phải deploy lại).
+1. Vào https://vercel.com, đăng nhập bằng GitHub, bấm **Add New → Project** và chọn kho `anvi-phat-trien-ban-than`.
+2. Vercel tự nhận diện Vite. Kiểm tra: **Build Command** là `npm run build`, **Output Directory** là `dist`.
+3. Mục **Environment Variables**: thêm `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` (chọn cả Production và Preview).
+4. Bấm **Deploy**. Mỗi nhánh được đẩy lên sẽ có một địa chỉ preview riêng; nhánh `main` là bản chính thức.
+5. Sau khi có địa chỉ, vào Supabase **Authentication → URL Configuration** và đặt **Site URL** là địa chỉ đó, đồng thời thêm vào **Redirect URLs**.
 
-**GitHub Pages (workflow đã có sẵn: `.github/workflows/pages.yml`)**
-1. Settings → Pages → Source: chọn **GitHub Actions**.
-2. Settings → Secrets and variables → Actions → thêm hai secret `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY`.
-3. Mỗi lần push lên `main` (hoặc chạy thủ công ở tab Actions), workflow sẽ build và publish.
+Vì Vite nhúng biến môi trường vào bản build, đổi biến trên Vercel thì phải **Redeploy** lại.
 
-**Netlify (cấu hình trong `netlify.toml`)**
-- Build command: `npm run build`, publish directory: `dist`.
-- Site configuration → Environment variables: thêm hai biến trên.
-
-Sau khi có địa chỉ thật, cập nhật **Site URL** và **Redirect URLs** trong Supabase cho khớp.
+Chỉ cần hai biến trên. Khoá anon là khoá công khai; không đưa khoá `service_role` vào bất kỳ đâu.
 
 ## Lưu trữ dữ liệu
 
 - Dữ liệu chính lưu trên Supabase: bảng `user_data` (toàn bộ cấu hình và nhật ký) và `growth_habits` (lịch sử thói quen theo ngày).
 - Lần đăng nhập đầu tiên trên một trình duyệt, nếu tài khoản chưa có dữ liệu trên máy chủ, ứng dụng sẽ chuyển dữ liệu cũ đang lưu trong trình duyệt (localStorage) lên tài khoản đó. Chỉ thực hiện một lần cho mỗi trình duyệt.
 - Mật khẩu do Supabase quản lý và băm, ứng dụng không lưu mật khẩu.
+- Đăng ký không cần xác nhận email: tắt **Confirm email** trong Supabase (Authentication → Sign In / Providers → Email) thì đăng ký xong vào được ngay.
