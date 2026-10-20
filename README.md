@@ -57,11 +57,20 @@ npm run dev                 # mở địa chỉ hiển thị trong terminal (th�
 
 Mỗi thói quen có tối đa một dòng cho mỗi ngày (ràng buộc duy nhất theo `user_id`, `habit_name`, `target_date`).
 
-## Đưa lên mạng bằng Netlify
+## Đưa lên mạng
 
-- Build command: `npm run build`
-- Publish directory: `dist`
-- Vào *Site configuration → Environment variables* và thêm `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`. Vite nhúng các biến này vào lúc build, nên sau khi thêm hoặc đổi biến phải deploy lại.
+Ứng dụng là trang tĩnh sau khi build. Có hai cách, cả hai đều cần hai biến `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` (vì Vite nhúng giá trị vào bản build, nên đổi biến thì phải deploy lại).
+
+**GitHub Pages (workflow đã có sẵn: `.github/workflows/pages.yml`)**
+1. Settings → Pages → Source: chọn **GitHub Actions**.
+2. Settings → Secrets and variables → Actions → thêm hai secret `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY`.
+3. Mỗi lần push lên `main` (hoặc chạy thủ công ở tab Actions), workflow sẽ build và publish.
+
+**Netlify (cấu hình trong `netlify.toml`)**
+- Build command: `npm run build`, publish directory: `dist`.
+- Site configuration → Environment variables: thêm hai biến trên.
+
+Sau khi có địa chỉ thật, cập nhật **Site URL** và **Redirect URLs** trong Supabase cho khớp.
 
 ## Lưu trữ dữ liệu
 
