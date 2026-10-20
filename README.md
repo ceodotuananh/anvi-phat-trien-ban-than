@@ -12,38 +12,66 @@
 - **Nhật ký ngày**: làm tốt, chưa làm được, bài học, cảm xúc; AI tổng hợp và gợi ý định hướng.
 - **Video ý nghĩa**: kho video YouTube chia nhóm Thân, Tâm, Tuệ kèm tóm tắt.
 - **Châm ngôn & nguyên tắc sống**: banner động lực hiện popup khi mở trang.
-- **Tài khoản**: đăng nhập bằng email; quản trị viên tạo tài khoản cho người khác với mật khẩu mặc định `123456`, người dùng có thể đổi mật khẩu hoặc giữ nguyên. Mỗi tài khoản có dữ liệu riêng, không lẫn vào nhau.
+- **Tài khoản**: đăng ký, đăng nhập bằng email và mật khẩu (Supabase Auth), đổi mật khẩu, quên mật khẩu. Mỗi người dùng có dữ liệu riêng, đồng bộ trên mọi trình duyệt khi đăng nhập.
 
 ## Cấu trúc
 
 ```
-index.html                  Toàn bộ ứng dụng (HTML + CSS + JavaScript, không cần build)
-assets/logo-anvi-trang.png  Logo bản âm (trắng) dùng trên menu
-assets/logo-anvi-goc.png    Logo gốc màu xanh
+index.html               Giao diện (HTML + CSS)
+src/app.js               Logic ứng dụng, lưu trữ và đăng nhập
+src/supabase.js          Khởi tạo Supabase client từ biến môi trường
+public/assets/           Logo (được copy nguyên vẹn khi build)
+supabase/migrations/     SQL tạo bảng và chính sách bảo mật (RLS)
+.env.example             Mẫu biến môi trường
 ```
 
-## Chạy thử
+## Chạy thử trên máy
 
-Mở trực tiếp `index.html` bằng trình duyệt, hoặc chạy một máy chủ tĩnh:
+Yêu cầu Node.js 20.19 trở lên.
 
 ```bash
-python3 -m http.server 8080
-# mở http://localhost:8080
+npm install
+cp .env.example .env        # rồi điền VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY
+npm run dev                 # mở địa chỉ hiển thị trong terminal (thường là http://localhost:5173)
 ```
 
-## Đưa lên mạng bằng GitHub Pages
+Đóng gói bản tĩnh để đưa lên mạng: `npm run build` (kết quả nằm trong thư mục `dist/`).
 
-Vào **Settings → Pages**, chọn nhánh `main`, thư mục `/ (root)` rồi bấm **Save**. Sau ít phút trang chạy tại
-`https://<tên-tài-khoản>.github.io/anvi-phat-trien-ban-than/`.
+## Thiết lập Supabase (làm một lần)
 
-## Tài khoản đăng nhập
+1. Tạo project trên supabase.com, lấy **Project URL** và **anon public key** tại *Project Settings → API*. Không dùng khoá `service_role`.
+2. Mở **SQL Editor**, dán toàn bộ nội dung `supabase/migrations/20261020000000_init.sql` rồi chạy. Lệnh này tạo bảng `user_data` và `growth_habits`, đồng thời bật RLS để mỗi người chỉ thấy dữ liệu của mình.
+3. Vào *Authentication → Sign In / Providers → Email*: bật **Email**. Tắt **Confirm email** nếu muốn đăng ký và đăng nhập ngay, không cần xác nhận qua email.
+4. Vào *Authentication → URL Configuration*: đặt **Site URL** và thêm địa chỉ của trang (ví dụ `https://anvi.netlify.app`) vào **Redirect URLs**. Cần để chức năng "Quên mật khẩu" hoạt động.
 
-- Lần đầu mở ứng dụng: nhập email để tạo tài khoản quản trị (mật khẩu mặc định `123456`). Dữ liệu sẵn có trên trình duyệt thuộc về tài khoản này.
-- Vào mục **Tài khoản** trên menu để tạo tài khoản mới (quyền Thành viên hoặc Quản trị), đặt lại mật khẩu về `123456` hoặc xoá tài khoản.
-- Khi đăng nhập bằng mật khẩu mặc định, ứng dụng gợi ý đổi mật khẩu; có thể bấm "Để sau".
-- Danh sách tài khoản và dữ liệu lưu trên trình duyệt của thiết bị đang dùng, nên mọi người cần dùng chung thiết bị/trình duyệt. Đây là lớp tách dữ liệu giữa người dùng, không phải bảo mật máy chủ.
+### Bảng `growth_habits`
+
+| Cột | Ý nghĩa |
+|---|---|
+| `id` | Khoá chính |
+| `user_id` | Chủ tài khoản (tham chiếu `auth.users`) |
+| `habit_name` | Tên thói quen |
+| `is_completed` | Đã đạt chỉ tiêu trong ngày hay chưa |
+| `target_date` | Ngày ghi nhận |
+| `created_at` | Thời điểm tạo dòng |
+
+Mỗi thói quen có tối đa một dòng cho mỗi ngày (ràng buộc duy nhất theo `user_id`, `habit_name`, `target_date`).
+
+## Đưa lên mạng bằng Vercel
+
+1. Vào https://vercel.com, đăng nhập bằng GitHub, bấm **Add New → Project** và chọn kho `anvi-phat-trien-ban-than`.
+2. Vercel tự nhận diện Vite. Kiểm tra: **Build Command** là `npm run build`, **Output Directory** là `dist`.
+3. Mục **Environment Variables**: thêm `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` (chọn cả Production và Preview).
+4. Bấm **Deploy**. Mỗi nhánh được đẩy lên sẽ có một địa chỉ preview riêng; nhánh `main` là bản chính thức.
+5. Sau khi có địa chỉ, vào Supabase **Authentication → URL Configuration** và đặt **Site URL** là địa chỉ đó, đồng thời thêm vào **Redirect URLs**.
+
+Vì Vite nhúng biến môi trường vào bản build, đổi biến trên Vercel thì phải **Redeploy** lại.
+
+Chỉ cần hai biến trên. Khoá anon là khoá công khai; không đưa khoá `service_role` vào bất kỳ đâu.
 
 ## Lưu trữ dữ liệu
 
-- Khi chạy trong Claude (claude.ai artifact): dữ liệu đồng bộ theo tài khoản và có AI phân tích.
-- Khi chạy độc lập (GitHub Pages, máy cá nhân): dữ liệu lưu trong trình duyệt (localStorage) của máy đang dùng; tính năng AI tạm ẩn vì cần kết nối dịch vụ AI riêng. Tiêu đề video YouTube được tự lấy ở chế độ này.
+- Dữ liệu chính lưu trên Supabase: bảng `user_data` (toàn bộ cấu hình và nhật ký) và `growth_habits` (lịch sử thói quen theo ngày).
+- Lần đăng nhập đầu tiên trên một trình duyệt, nếu tài khoản chưa có dữ liệu trên máy chủ, ứng dụng sẽ chuyển dữ liệu cũ đang lưu trong trình duyệt (localStorage) lên tài khoản đó. Chỉ thực hiện một lần cho mỗi trình duyệt.
+- Mật khẩu do Supabase quản lý và băm, ứng dụng không lưu mật khẩu.
+- Đăng ký không cần xác nhận email: tắt **Confirm email** trong Supabase (Authentication → Sign In / Providers → Email) thì đăng ký xong vào được ngay.
