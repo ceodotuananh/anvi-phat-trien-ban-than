@@ -395,6 +395,34 @@ body.locked .auth{display:flex}
 .badge.ok{background:#DCFCE7;color:#166534}
 .pw-hint{font-size:13px;color:var(--muted);margin:8px 0 0}
 @media (max-width:860px){.acc-add{grid-template-columns:1fr}}
+/* Mobile (điện thoại, Chrome Android/iOS) */
+@media (max-width:860px){
+  .top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 12px;margin-bottom:14px}
+  .top h2{min-width:0;flex:none;font-size:22px}
+  .top h2 small{font-size:12.5px}
+  .top .tico{width:32px;height:32px;margin-right:8px}
+  .top .tico svg{width:19px;height:19px}
+  .datebar{grid-column:1/-1;grid-row:2;justify-content:space-between;padding:4px}
+  .datebar input{min-width:0;flex:1;text-align:center}
+  .datebar button{padding:8px 9px}
+  .today-btn{padding:8px 12px!important}
+  .theme-btn{grid-column:2;grid-row:1;width:40px;height:40px}
+  .card{padding:16px;border-radius:16px}
+  .card h3{font-size:16px}
+  .hero{padding:18px;gap:18px}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .stat{padding:12px 13px}
+  .stat b{font-size:24px}
+  .stat>span{font-size:12.5px}
+  .pbar{gap:8px;padding:10px}
+  .pbar .spacer{display:none}
+  .seg button{padding:6px 9px;font-size:13px}
+  input.f,textarea.f,select.f{font-size:16px}
+  .btn{padding:9px 12px}
+  .cosmos{padding:18px}
+  .cosmos h3{font-size:17px}
+  .auth-box{padding:24px 18px 18px}
+}
 </style>
 </head>
 <body class="locked">
