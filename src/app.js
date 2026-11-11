@@ -1,3 +1,4 @@
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 import { sb } from './supabase.js';
 const API=window.claude&&window.claude.use?window.claude:null;
 const LOGO=document.querySelector('.brand img').src;
