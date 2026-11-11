@@ -423,6 +423,14 @@ body.locked .auth{display:flex}
   .cosmos h3{font-size:17px}
   .auth-box{padding:24px 18px 18px}
 }
+/* Ô mật khẩu với nút hiện/ẩn */
+.pw-wrap{position:relative}
+.pw-wrap .f{padding-right:46px}
+.pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;padding:0;border:0;border-radius:9px;background:transparent;color:var(--muted);display:grid;place-items:center}
+.pw-eye:hover{background:var(--surface-2);color:var(--text)}
+.pw-eye svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.auth-note a{color:var(--g2);font-weight:600;text-decoration:none}
+.auth-note a:hover{text-decoration:underline}
 </style>
 </head>
 <body class="locked">

@@ -754,47 +754,103 @@ const normEmail=e=>String(e||'').trim().toLowerCase();
 const validEmail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 const authMessage=e=>{const m=String(e?.message||'');
   if(/invalid login/i.test(m))return 'Email hoặc mật khẩu không đúng';
-  if(/already registered|already exists/i.test(m))return 'Email này đã có tài khoản';
+  if(/already registered|already exists/i.test(m))return 'Email này đã có tài khoản. Hãy đăng nhập.';
   if(/not confirmed/i.test(m))return 'Email chưa được xác nhận. Kiểm tra hộp thư của bạn.';
   if(/least|short|characters/i.test(m))return 'Mật khẩu cần ít nhất 6 ký tự';
+  if(/rate limit|too many|over_email/i.test(m))return 'Gửi quá nhiều yêu cầu, vui lòng thử lại sau ít phút';
+  if(/sending|send.*email|smtp/i.test(m))return 'Không gửi được email lúc này, vui lòng thử lại sau';
   return m||'Có lỗi xảy ra, thử lại sau'};
 function legacyBody(){
   try{if(localStorage.getItem(MIGRATED_KEY))return null;const raw=localStorage.getItem(LEGACY_KEY);return raw?JSON.parse(raw):null}catch(e){return null}
 }
 
-function showAuth(msg='',mode='signin'){
+const EYE_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A9.8 9.8 0 0 1 12 5c6.4 0 10 7 10 7a17.5 17.5 0 0 1-3.2 4.1"/><path d="M6.6 6.6C3.7 8.3 2 12 2 12s3.6 7 10 7a9.9 9.9 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+const pwField=(id,label,ac)=>`<div class="fld"><label class="lb" for="${id}">${label}</label><div class="pw-wrap"><input class="f" id="${id}" type="password" autocomplete="${ac}"><button type="button" class="pw-eye" aria-label="Hiện mật khẩu" aria-pressed="false">${EYE_ICON}</button></div></div>`;
+const emailField=email=>`<div class="fld"><label class="lb" for="auEmail">Email</label><input class="f" id="auEmail" type="email" autocomplete="username" placeholder="ban@email.com" value="${esc(email)}"></div>`;
+/* Nút con mắt: bật/tắt hiển thị mật khẩu cho mọi ô mật khẩu */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.pw-eye');if(!b)return;
+  const inp=b.parentElement.querySelector('input');const show=inp.type==='password';
+  inp.type=show?'text':'password';b.innerHTML=show?EYE_OFF_ICON:EYE_ICON;
+  b.setAttribute('aria-label',show?'Ẩn mật khẩu':'Hiện mật khẩu');b.setAttribute('aria-pressed',String(show));inp.focus();
+});
+
+/* Các chế độ: signin, signup, forgot (quên mật khẩu), recovery (đặt mật khẩu mới từ link email), check (chờ xác nhận email) */
+function showAuth(msg='',mode='signin',email=''){
   document.body.classList.add('locked');closeModal();$('#popupOv').classList.remove('open');
   if(!sb){$('#auth').innerHTML=`<div class="auth-box"><img class="alogo" src="${LOGO}" alt="ANVI"><h3>Chưa cấu hình Supabase</h3><p class="sub">Sao chép .env.example thành .env, điền VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY, rồi chạy lại ứng dụng.</p></div>`;return}
-  const T={signin:['Đăng nhập ANVI','Đăng nhập','Chưa có tài khoản? Đăng ký'],signup:['Tạo tài khoản','Đăng ký','Đã có tài khoản? Đăng nhập'],forgot:['Quên mật khẩu','Gửi email đặt lại','← Quay lại đăng nhập']};
-  const [title,btn,alt]=T[mode];
+  const T={
+    signin:['Đăng nhập ANVI','Đăng nhập'],
+    signup:['Tạo tài khoản','Đăng ký'],
+    forgot:['Quên mật khẩu','Gửi liên kết đặt lại'],
+    recovery:['Đặt mật khẩu mới','Lưu mật khẩu mới'],
+    check:['Kiểm tra email','Gửi lại email xác nhận']};
+  const SUB={
+    signin:'Phát triển bản thân mỗi ngày – Thân · Tâm · Tuệ',
+    signup:'Tạo tài khoản để lưu dữ liệu riêng của bạn',
+    forgot:'Nhập email đã đăng ký, chúng tôi sẽ gửi liên kết đặt lại mật khẩu',
+    recovery:'Nhập mật khẩu mới cho tài khoản của bạn',
+    check:`Đã gửi thư xác nhận tới <b>${esc(email)}</b>. Bấm liên kết trong thư rồi quay lại đăng nhập.`};
+  const FIELDS={
+    signin:emailField(email)+pwField('auPw','Mật khẩu','current-password'),
+    signup:emailField(email)+pwField('auPw','Mật khẩu (ít nhất 6 ký tự)','new-password')+pwField('auPw2','Nhập lại mật khẩu','new-password'),
+    forgot:emailField(email),
+    recovery:pwField('auPw','Mật khẩu mới (ít nhất 6 ký tự)','new-password')+pwField('auPw2','Nhập lại mật khẩu mới','new-password'),
+    check:''};
+  const LINKS={
+    signin:'<a href="#" data-m="signup">Chưa có tài khoản? Đăng ký</a> · <a href="#" data-m="forgot">Quên mật khẩu?</a>',
+    signup:'<a href="#" data-m="signin">Đã có tài khoản? Đăng nhập</a>',
+    forgot:'<a href="#" data-m="signin">← Quay lại đăng nhập</a>',
+    recovery:'',
+    check:'<a href="#" data-m="signin">← Quay lại đăng nhập</a>'};
+  const [title,btn]=T[mode];
   $('#auth').innerHTML=`<form class="auth-box" id="authForm" novalidate>
     <img class="alogo" src="${LOGO}" alt="ANVI">
     <h3>${title}</h3>
-    <p class="sub">Phát triển bản thân mỗi ngày – Thân · Tâm · Tuệ</p>
-    <div class="fld"><label class="lb" for="auEmail">Email</label><input class="f" id="auEmail" type="email" autocomplete="username" placeholder="ban@email.com"></div>
-    ${mode==='forgot'?'':`<div class="fld"><label class="lb" for="auPw">Mật khẩu${mode==='signup'?' (ít nhất 6 ký tự)':''}</label><input class="f" id="auPw" type="password" autocomplete="${mode==='signup'?'new-password':'current-password'}"></div>`}
+    <p class="sub">${SUB[mode]}</p>
+    ${FIELDS[mode]}
     <div class="auth-err" id="auErr" role="alert">${esc(msg)}</div>
     <button class="btn primary" type="submit">${btn}</button>
-    <p class="auth-note"><a href="#" id="authAlt">${alt}</a>${mode==='signin'?' · <a href="#" id="authForgot">Quên mật khẩu?</a>':''}</p>
+    <p class="auth-note">${LINKS[mode]}</p>
   </form>`;
-  setTimeout(()=>$('#auEmail').focus(),30);
-  $('#authAlt').onclick=e=>{e.preventDefault();showAuth('',mode==='signin'?'signup':'signin')};
-  const fg=$('#authForgot');if(fg)fg.onclick=e=>{e.preventDefault();showAuth('','forgot')};
+  $('#authForm').addEventListener('click',e=>{const a=e.target.closest('[data-m]');if(!a)return;e.preventDefault();showAuth('',a.dataset.m)});
+  setTimeout(()=>{const f=$('#auEmail')||$('#auPw');f&&f.focus()},30);
   $('#authForm').onsubmit=async e=>{
-    e.preventDefault();const err=$('#auErr');err.style.color='';
-    const email=normEmail($('#auEmail').value);
-    if(!validEmail(email)){err.textContent='Email chưa đúng định dạng';$('#auEmail').focus();return}
-    if(mode==='forgot'){
-      const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.href.split('#')[0]});
-      err.style.color='var(--text)';err.textContent=error?authMessage(error):'Nếu email đã đăng ký, bạn sẽ nhận được thư đặt lại mật khẩu.';return;
-    }
-    const pw=$('#auPw').value;
-    if(!pw){err.textContent='Nhập mật khẩu';$('#auPw').focus();return}
-    if(mode==='signup'&&pw.length<6){err.textContent='Mật khẩu cần ít nhất 6 ký tự';$('#auPw').focus();return}
-    const res=mode==='signup'?await sb.auth.signUp({email,password:pw}):await sb.auth.signInWithPassword({email,password:pw});
-    if(res.error){err.textContent=authMessage(res.error);return}
-    if(!res.data.session){err.style.color='var(--text)';err.textContent='Đã tạo tài khoản. Kiểm tra email để xác nhận rồi đăng nhập.';return}
-    enterApp(res.data.user);
+    e.preventDefault();
+    const err=$('#auErr');const say=(t,ok)=>{err.style.color=ok?'var(--text)':'';err.textContent=t};
+    const submit=$('#authForm button[type=submit]');submit.disabled=true;
+    try{
+      if(mode==='check'){const {error}=await sb.auth.resend({type:'signup',email});say(error?authMessage(error):'Đã gửi lại email xác nhận.',!error);return}
+      if(mode==='recovery'){
+        const pw=$('#auPw').value,pw2=$('#auPw2').value;
+        if(pw.length<6){say('Mật khẩu cần ít nhất 6 ký tự');$('#auPw').focus();return}
+        if(pw!==pw2){say('Hai lần nhập mật khẩu chưa khớp');$('#auPw2').select();return}
+        const {data,error}=await sb.auth.updateUser({password:pw});
+        if(error){say(authMessage(error));return}
+        recovering=false;history.replaceState(null,'',location.pathname+location.search);
+        toast('Đã đặt mật khẩu mới');enterApp(data.user);return;
+      }
+      const em=normEmail($('#auEmail').value);
+      if(!validEmail(em)){say('Email chưa đúng định dạng');$('#auEmail').focus();return}
+      if(mode==='forgot'){
+        const {error}=await sb.auth.resetPasswordForEmail(em,{redirectTo:location.origin+location.pathname});
+        say(error?authMessage(error):'Nếu email đã đăng ký, bạn sẽ nhận được thư có liên kết đặt lại mật khẩu. Kiểm tra cả thư rác.',!error);return;
+      }
+      const pw=$('#auPw').value;
+      if(!pw){say('Nhập mật khẩu');$('#auPw').focus();return}
+      if(mode==='signup'){
+        if(pw.length<6){say('Mật khẩu cần ít nhất 6 ký tự');$('#auPw').focus();return}
+        if(pw!==$('#auPw2').value){say('Hai lần nhập mật khẩu chưa khớp');$('#auPw2').select();return}
+        const {data,error}=await sb.auth.signUp({email:em,password:pw});
+        if(error){say(authMessage(error));return}
+        if(data.session){enterApp(data.user);return}
+        showAuth('','check',em);return;
+      }
+      const {data,error}=await sb.auth.signInWithPassword({email:em,password:pw});
+      if(error){say(authMessage(error));$('#auPw').select();return}
+      enterApp(data.user);
+    }finally{submit.disabled=false}
   };
 }
 
@@ -836,9 +892,9 @@ async function logout(){
 
 function pwForm(){
   openModal(`<h3>Đổi mật khẩu</h3>
-   <div class="fld"><label class="lb" for="pwOld">Mật khẩu hiện tại</label><input class="f" id="pwOld" type="password" autocomplete="current-password"></div>
-   <div class="fld"><label class="lb" for="pwNew">Mật khẩu mới (ít nhất 6 ký tự)</label><input class="f" id="pwNew" type="password" autocomplete="new-password"></div>
-   <div class="fld"><label class="lb" for="pwNew2">Nhập lại mật khẩu mới</label><input class="f" id="pwNew2" type="password" autocomplete="new-password"></div>
+   ${pwField('pwOld','Mật khẩu hiện tại','current-password')}
+   ${pwField('pwNew','Mật khẩu mới (ít nhất 6 ký tự)','new-password')}
+   ${pwField('pwNew2','Nhập lại mật khẩu mới','new-password')}
    <div class="auth-err" id="pwErr" role="alert"></div>
    <div class="row"><span class="spacer"></span><button class="btn" data-close>Huỷ</button><button class="btn primary" id="pwSave">Đổi mật khẩu</button></div>`);
   setTimeout(()=>$('#pwOld').focus(),50);
@@ -866,10 +922,17 @@ VIEWS.account=()=>{
 };
 
 /* ---------- Boot ---------- */
+let recovering=location.hash.includes('type=recovery');
+const linkFailed=location.hash.includes('error_code=');
 render();
-if(sb)sb.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT'&&ME){syncToken++;ME=null;loaded=false;showAuth()}});
+if(sb)sb.auth.onAuthStateChange(event=>{
+  if(event==='PASSWORD_RECOVERY'){recovering=true;showAuth('','recovery');return}
+  if(event==='SIGNED_OUT'&&ME){syncToken++;ME=null;loaded=false;showAuth()}
+});
 (async()=>{
   if(!sb){showAuth();return}
+  if(linkFailed){history.replaceState(null,'',location.pathname+location.search);showAuth('Liên kết đã hết hạn hoặc không hợp lệ. Hãy yêu cầu gửi lại email.','forgot');return}
   const {data:{session}}=await sb.auth.getSession();
+  if(recovering){showAuth(session?'':'Liên kết đã hết hạn. Hãy yêu cầu gửi lại email.',session?'recovery':'forgot');return}
   if(session?.user)enterApp(session.user);else showAuth();
 })();
