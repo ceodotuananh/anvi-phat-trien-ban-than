@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ANVI – Phát triển bản thân</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B5D2E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Lora:ital,wght@0,500;1,500;1,600&display=swap" rel="stylesheet">
@@ -431,6 +436,80 @@ body.locked .auth{display:flex}
 .pw-eye svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .auth-note a{color:var(--g2);font-weight:600;text-decoration:none}
 .auth-note a:hover{text-decoration:underline}
+/* Những mục tiêu lớn */
+.bg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+.bg-cat{border-top:5px solid var(--c)}
+.bg-head{display:flex;align-items:center;gap:10px}
+.bg-ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:22px;background:color-mix(in srgb,var(--c) 14%,var(--surface));flex:none}
+.bg-title{flex:1;min-width:0}
+.bg-title h3{margin:0;font-size:16.5px;overflow-wrap:anywhere}
+.bg-title small{color:var(--muted);font-size:12.5px}
+.bg-bar{height:7px;border-radius:9px;background:var(--cell-empty);overflow:hidden;margin:12px 0}
+.bg-bar i{display:block;height:100%;background:var(--c);border-radius:9px;transition:width .3s}
+.bg-items{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.bg-item{display:flex;align-items:flex-start;gap:8px;padding:6px 6px 6px 10px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);border-left:4px solid var(--c)}
+.bg-item input[type=checkbox]{width:18px;height:18px;margin-top:9px;accent-color:var(--c);flex:none}
+.bg-text{flex:1;min-width:0;border:0;background:transparent;resize:none;padding:7px 2px;line-height:1.45;outline:none;overflow:hidden;color:var(--text)}
+.bg-item.done .bg-text{text-decoration:line-through;color:var(--muted)}
+.bg-due{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:5px 6px;font-size:12.5px;width:136px;flex:none;margin-top:3px}
+.bg-add{border-style:dashed}
+.bg-presets{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.bg-icons{display:flex;flex-wrap:wrap;gap:6px}
+.bg-icons button{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-size:20px;padding:0}
+.bg-icons button[aria-pressed="true"]{border-color:var(--g3);box-shadow:0 0 0 2px var(--g3) inset}
+.goal-grid.bg-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+.goal-grid.bg-stats p b{font-size:22px}
+/* Trợ lý AI */
+[hidden]{display:none!important}
+.rep-sec .sec-title{flex-wrap:wrap}
+.ai-sec{white-space:nowrap}
+.ai-fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:40;border:0;border-radius:99px;padding:12px 18px;background:var(--grad);color:#fff;font-weight:700;box-shadow:0 10px 30px -8px rgba(11,93,46,.6);display:flex;gap:8px;align-items:center}
+body.locked .ai-fab,body.locked .ai-panel,body.chat-open .ai-fab{display:none!important}
+.ai-panel{position:fixed;right:18px;bottom:18px;z-index:45;width:min(440px,calc(100vw - 36px));height:min(640px,calc(100vh - 36px));background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.3);display:flex;flex-direction:column;overflow:hidden}
+.ai-head{display:flex;align-items:center;gap:8px;padding:10px 10px 10px 16px;background:var(--grad);color:#fff}
+.ai-head .btn{background:rgba(255,255,255,.2);border:0;color:#fff}
+.ai-head .btn:hover:not(:disabled){background:rgba(255,255,255,.3)}
+.ai-head .icon-btn{color:#fff}
+.ai-head .icon-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+.ai-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;overscroll-behavior:contain}
+.chat-msg{max-width:94%;border-radius:14px;padding:10px 12px;font-size:14px;line-height:1.55;overflow-wrap:anywhere}
+.chat-msg.user{align-self:flex-end;background:color-mix(in srgb,var(--g3) 16%,var(--surface));white-space:pre-wrap}
+.chat-msg.assistant{align-self:flex-start;background:var(--surface-2);border:1px solid var(--line)}
+.chat-msg .ai-out{margin:0;font-size:14px}
+.chat-msg .ai-out h4:first-child{margin-top:0}
+.chat-empty{color:var(--muted);font-size:13.5px;text-align:center;margin:auto;padding:20px}
+.ai-form{display:flex;gap:8px;align-items:flex-end;padding:10px;border-top:1px solid var(--line);background:var(--surface)}
+.ai-form textarea{flex:1;min-width:0;resize:none;max-height:140px;border:1px solid var(--line);border-radius:12px;padding:9px 11px;background:var(--surface-2);font-size:15px;line-height:1.4;outline:none}
+.ai-form textarea:focus{border-color:var(--g3)}
+/* Chữ dài không tràn khung */
+body{overflow-wrap:break-word}
+@media (max-width:860px){
+  .main{padding-bottom:96px}
+  input:not([type=checkbox]):not([type=radio]),textarea,select{font-size:16px}
+  .hx .nm span{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.3}
+  .krow{flex-wrap:wrap;row-gap:4px;padding:6px 6px 6px 0}
+  .krow select{max-width:none;flex:1}
+  .krow input[data-f="t"]{order:10;flex:1 1 100%;padding:6px 8px}
+  .bg-grid{grid-template-columns:1fr}
+  .bg-item{flex-wrap:wrap}
+  .bg-text{flex:1 1 calc(100% - 64px)}
+  .bg-due{margin-left:26px;flex:1;width:auto}
+  .goal-pin .row .btn{flex:1}
+  .ai-panel{right:0;left:0;bottom:0;width:100%;height:min(82vh,calc(100vh - 56px));border-radius:18px 18px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .ai-fab{right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));padding:11px 15px}
+  .ai-head b{font-size:14px}
+}
+/* Bảng nhiều cột chuyển thành thẻ trên màn hình nhỏ để không bị cắt chữ */
+@media (max-width:640px){
+  table.list,table.list tbody,table.list tr,table.list td,table.order,table.order tbody,table.order tr,table.order td{display:block;width:100%}
+  table.list thead,table.order thead{display:none}
+  table.order{min-width:0;border-spacing:0}
+  table.list tr,table.order tr{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:10px;background:var(--surface)}
+  table.list td,table.order td{border:0;padding:4px 0;text-align:left!important;white-space:pre-wrap!important}
+  table.list td[data-label]:not([data-label=""])::before,table.order td[data-label]:not([data-label=""])::before{content:attr(data-label);display:block;font-size:11.5px;font-weight:700;color:var(--muted);margin-bottom:2px;white-space:normal}
+  table.order td:last-child{text-align:right!important}
+  .ai-head .btn{padding:6px 9px;font-size:12.5px}
+}
 </style>
 </head>
 <body class="locked">
@@ -463,6 +542,12 @@ body.locked .auth{display:flex}
 <div class="overlay" id="modalOv"><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
 <div class="overlay" id="popupOv"><div class="popup" id="popup" role="dialog" aria-modal="true"></div></div>
 <div class="toast" id="toast"></div>
+<button class="ai-fab" id="aiFab" type="button" aria-label="Mở trợ lý AI">✨<span>Trợ lý AI</span></button>
+<section class="ai-panel" id="aiPanel" aria-label="Trợ lý AI" hidden>
+  <header class="ai-head"><b>✨ Trợ lý AI ANVI</b><span class="spacer"></span><button class="btn sm" id="aiNew" type="button">Cuộc trò chuyện mới</button><button class="icon-btn" id="aiClose" type="button" aria-label="Đóng trợ lý AI">✕</button></header>
+  <div class="ai-msgs" id="aiMsgs" aria-live="polite"></div>
+  <form class="ai-form" id="aiForm"><textarea id="aiInput" rows="1" placeholder="Hỏi thêm về dữ liệu của bạn…" aria-label="Câu hỏi cho AI"></textarea><button class="btn sm" id="aiStopChat" type="button" hidden>Dừng</button><button class="btn primary" id="aiSend" type="submit">Gửi</button></form>
+</section>
 
 <script type="module" src="/src/app.js"></script>
 </body>

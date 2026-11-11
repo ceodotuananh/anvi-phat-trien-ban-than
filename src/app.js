@@ -4,6 +4,7 @@ const LOGO=document.querySelector('.brand img').src;
 /* ---------- Constants ---------- */
 const TABS=[
  {id:'report',name:'Báo cáo tổng hợp',icon:'📊',sub:'Toàn cảnh mọi hạng mục theo kỳ'},
+ {id:'goals',name:'Những mục tiêu lớn',icon:'🎯',sub:'Hạng mục mục tiêu dài hạn và các mục tiêu con'},
  {id:'habits',name:'Nhật ký thói quen',icon:'🌱',sub:'Rèn Thân – Tâm – Tuệ mỗi ngày'},
  {id:'karma',name:'Quản lý nghiệp',icon:'☯️',sub:'Kế hoạch & nhật ký gieo hạt'},
  {id:'gratitude',name:'Nhật ký biết ơn',icon:'🙏',sub:'10 điều biết ơn mỗi ngày'},
@@ -13,6 +14,7 @@ const TABS=[
  {id:'quotes',name:'Châm ngôn & nguyên tắc',icon:'🔥',sub:'Ngọn lửa động lực mỗi khi mở trang'},
  {id:'account',name:'Tài khoản',icon:'👤',sub:'Đăng nhập, mật khẩu và tài khoản người dùng'}];
 const ICONS={
+ goals:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3"/>',
  report:'<path d="M4 20V11M10 20V5M16 20v-8M21 20H3"/>',
  habits:'<path d="M12 21v-9"/><path d="M12 12C12 7.5 8.5 4.5 4 4.5c0 4.5 3.5 7.5 8 7.5z"/><path d="M12 14.5c0-4 3-6.5 7.5-6.5 0 4-3 6.5-7.5 6.5z"/>',
  karma:'<circle cx="12" cy="12" r="9"/><path d="M12 3a4.5 4.5 0 0 0 0 9 4.5 4.5 0 0 1 0 9"/>',
@@ -70,7 +72,7 @@ const AIRES={};
 let ME=null, syncToken=0, loaded=false, saving=false, saveAgain=false, saveTimer=null;
 const pendingGrowth=new Map();
 const LEGACY_KEY='anvi-v1', MIGRATED_KEY='anvi-migrated-to';
-function normalizeConfig(c){c=c||DEFAULT_CONFIG();c.habits??=[];c.quotes??=[];c.karmaGoals??=[];c.videos??=[];if(c.popup===undefined)c.popup=true;return c}
+function normalizeConfig(c){c=c||DEFAULT_CONFIG();c.habits??=[];c.quotes??=[];c.karmaGoals??=[];c.videos??=[];c.bigGoals??=[];if(c.popup===undefined)c.popup=true;return c}
 function fromBody(b){return{config:normalizeConfig(b?.config),months:b?.months||{}}}
 
 const getDay=k=>(S.months[k.slice(0,7)]?.days?.[k])||{};
@@ -174,7 +176,7 @@ function setDate(k){cur=k;render()}
 function render(){
   renderNav();const t=TABS.find(x=>x.id===tab);
   window.AI_HOOK=null;
-  const noDate=['quotes','videos','account'].includes(tab);
+  const noDate=['quotes','videos','account','goals'].includes(tab);
   $('#title').innerHTML=`<span class="tico">${ico(t.id)}</span>${t.name}<small>${noDate?t.sub:fmtLong(cur)+' · '+t.sub}</small>`;
   $('#datePick').value=cur;
   document.querySelector('.datebar').style.visibility=noDate?'hidden':'visible';
@@ -514,27 +516,49 @@ NHẬT KÝ:
 ${entries}`;
 }
 const cut=(s,n=220)=>{s=String(s||'').replace(/\s+/g,' ').trim();return s.length>n?s.slice(0,n)+'…':s};
+/* Dữ liệu từng hạng mục trong một kỳ, dạng văn bản để gửi cho AI */
+const AI_SECTIONS={
+ habits:{name:'Nhật ký thói quen',data:r=>{const cd=countDays(r),H=S.config.habits;
+   return [`Hoàn thành trung bình: ${Math.round(avg(cd.map(k=>dayScore(k)))*100)}%/ngày; ngày đạt 100%: ${cd.filter(k=>H.length&&dayScore(k)>=1).length}/${cd.length}.`,
+     ...H.map(h=>`- [${CATS[h.cat].name}] ${h.name}: đạt chỉ tiêu ${cd.filter(k=>hv(k,h)>=h.target).length}/${cd.length} ngày, tổng ${cd.reduce((s,k)=>s+hv(k,h),0)} ${h.unit} (chỉ tiêu ${h.target}/ngày)`)].join('\n')}},
+ karma:{name:'Quản lý nghiệp',data:r=>{const g=S.config.karmaGoals.at(-1),plans=plansIn(r),ds=rangeDays(r);
+   const out=[`Tổng việc đã gieo: ${seedsIn(r)}. Theo nhóm: ${KCOLS.map(c=>`${c.name} ${seedsIn(r,c.id)}`).join(', ')}. Kế hoạch: ${plans.length} việc, đã làm ${plans.filter(x=>x.done).length}.`];
+   if(g)out.push('Mục tiêu tuần đang ghim: '+KCOLS.filter(c=>g.goals[c.id]).map(c=>`${c.name}: ${cut(g.goals[c.id],120)}`).join('; '));
+   const seeds=ds.flatMap(k=>filled(kLog(k)).map(x=>`- ${fmtShort(k)} [${KMAP[x.g]?.name}] ${cut(x.t,140)}`)).slice(-40);
+   if(seeds.length)out.push('Một số việc đã gieo:\n'+seeds.join('\n'));return out.join('\n')}},
+ gratitude:{name:'Nhật ký biết ơn',data:r=>{const ds=rangeDays(r),cd=countDays(r),gd=ds.filter(gSub);
+   const out=[`Số ngày đã bấm Biết ơn: ${gd.length}/${cd.length}. Chủ đề: ${gd.map(k=>getDay(k).grat.topic).filter(Boolean).map(t=>cut(t,60)).join('; ')||'(không có)'}.`];
+   const gi=ds.flatMap(k=>gItems(k).map(x=>'- '+cut(x,100))).slice(-35);if(gi.length)out.push('Một số điều biết ơn:\n'+gi.join('\n'));return out.join('\n')}},
+ order:{name:'Order vũ trụ',data:r=>{const od=rangeDays(r).flatMap(k=>orderRows(k).map(o=>`- ${fmtShort(k)}: việc "${cut(o.task,100)}" → mong muốn "${cut(o.goal,100)}" → nguồn lực "${cut(o.res,80)}" → thực tế "${cut(o.real,120)||'(chưa ghi)'}"`)).slice(-30);
+   return `Số đơn: ${ordersIn(r).length}, đã ghi thực tế: ${ordersIn(r).filter(x=>(x.real||'').trim()).length}.`+(od.length?'\n'+od.join('\n'):'')}},
+ journal:{name:'Nhật ký ngày',data:r=>{const jd=rangeDays(r).filter(jHas);
+   return `Số ngày viết: ${jd.length}.`+(jd.length?'\n'+jd.slice(-31).map(k=>{const j=getDay(k).journal;return `- ${fmtShort(k)}${j.mood!=null?` (cảm xúc ${j.mood+1}/5)`:''}: làm tốt "${cut(j.good)}"; chưa làm được "${cut(j.notyet)}"; bài học "${cut(j.learn)}"`}).join('\n'):'')}},
+ goals:{name:'Những mục tiêu lớn',noPeriod:true,data:()=>{const G=S.config.bigGoals;if(!G.length)return 'Chưa có hạng mục mục tiêu lớn nào.';
+   return G.map(g=>`## ${g.name} (${gDone(g)}/${gList(g).length} hoàn thành)\n`+(gList(g).map(i=>`- [${i.done?'x':' '}] ${cut(i.t,200)}${i.due?` (hạn ${fmtShortY(i.due)})`:''}`).join('\n')||'- (chưa có mục tiêu con)')).join('\n\n')}}
+};
+function sectionPrompt(key,r){
+  const s=AI_SECTIONS[key];const per=s.noPeriod?'':` trong kỳ ${rangeLabel(r)}`;
+  const cmp=P.cmp&&!s.noPeriod?`\n\nKỲ SO SÁNH (${rangeLabel(cmpRange(r))}):\n${s.data(cmpRange(r))}`:'';
+  return `Hãy phân tích hạng mục "${s.name}" của tôi${per}. Trả lời theo cấu trúc markdown:
+
+## Nhận định
+(2–3 câu về bức tranh chung${cmp?', có so sánh với kỳ trước':''})
+## Điểm sáng
+(2–4 gạch đầu dòng, có số liệu)
+## Điểm cần cải thiện
+(2–4 gạch đầu dòng)
+## Hành động cho giai đoạn tới
+(3–5 hành động cụ thể, đo được)
+
+DỮ LIỆU${per?` (${rangeLabel(r)})`:''}:
+${s.data(r)}${cmp}`;
+}
+const periodHasData=r=>rangeDays(r).some(k=>{const d=getDay(k);return (d.habits&&Object.keys(d.habits).length)||filled(kLog(k)).length||gCount(k)||orderRows(k).length||jHas(k)||filled(kPlan(k)).length});
 function reportPrompt(r){
-  const ds=rangeDays(r),cd=countDays(r),H=S.config.habits;
-  const hasData=ds.some(k=>{const d=getDay(k);return (d.habits&&Object.keys(d.habits).length)||filled(kLog(k)).length||gCount(k)||orderRows(k).length||jHas(k)||filled(kPlan(k)).length});
-  if(!hasData)return null;
-  const lines=[];
-  lines.push(`# THÓI QUEN (Thân – Tâm – Tuệ)\nHoàn thành trung bình: ${Math.round(avg(cd.map(k=>dayScore(k)))*100)}%/ngày; ngày đạt 100%: ${cd.filter(k=>H.length&&dayScore(k)>=1).length}/${cd.length}.`);
-  H.forEach(h=>lines.push(`- [${CATS[h.cat].name}] ${h.name}: đạt chỉ tiêu ${cd.filter(k=>hv(k,h)>=h.target).length}/${cd.length} ngày, tổng ${cd.reduce((s,k)=>s+hv(k,h),0)} ${h.unit} (chỉ tiêu ${h.target}/ngày)`));
-  const g=S.config.karmaGoals.at(-1);const plans=plansIn(r);
-  lines.push(`\n# QUẢN LÝ NGHIỆP\nTổng việc đã gieo: ${seedsIn(r)}. Theo nhóm: ${KCOLS.map(c=>`${c.name} ${seedsIn(r,c.id)}`).join(', ')}. Kế hoạch: ${plans.length} việc, đã làm ${plans.filter(x=>x.done).length}.`);
-  if(g)lines.push('Mục tiêu tuần đang ghim: '+KCOLS.filter(c=>g.goals[c.id]).map(c=>`${c.name}: ${cut(g.goals[c.id],120)}`).join('; '));
-  const seeds=ds.flatMap(k=>filled(kLog(k)).map(x=>`- ${fmtShort(k)} [${KMAP[x.g]?.name}] ${cut(x.t,140)}`)).slice(-40);
-  if(seeds.length)lines.push('Một số việc đã gieo:\n'+seeds.join('\n'));
-  const gd=ds.filter(gSub);
-  lines.push(`\n# NHẬT KÝ BIẾT ƠN\nSố ngày đã bấm Biết ơn: ${gd.length}/${cd.length}. Chủ đề: ${gd.map(k=>getDay(k).grat.topic).filter(Boolean).map(t=>cut(t,60)).join('; ')||'(không có)'}.`);
-  const gi=ds.flatMap(k=>gItems(k).map(x=>'- '+cut(x,100))).slice(-35);if(gi.length)lines.push('Một số điều biết ơn:\n'+gi.join('\n'));
-  const od=ds.flatMap(k=>orderRows(k).map(o=>`- ${fmtShort(k)}: việc "${cut(o.task,100)}" → mong muốn "${cut(o.goal,100)}" → nguồn lực "${cut(o.res,80)}" → thực tế "${cut(o.real,120)||'(chưa ghi)'}"`)).slice(-30);
-  lines.push(`\n# ORDER VŨ TRỤ\nSố đơn: ${ordersIn(r).length}, đã ghi thực tế: ${ordersIn(r).filter(x=>(x.real||'').trim()).length}.`+(od.length?'\n'+od.join('\n'):''));
-  const jd=ds.filter(jHas);
-  lines.push(`\n# NHẬT KÝ NGÀY\nSố ngày viết: ${jd.length}.`+(jd.length?'\n'+jd.slice(-31).map(k=>{const j=getDay(k).journal;return `- ${fmtShort(k)}${j.mood!=null?` (cảm xúc ${j.mood+1}/5)`:''}: làm tốt "${cut(j.good)}"; chưa làm được "${cut(j.notyet)}"; bài học "${cut(j.learn)}"`}).join('\n'):''));
-  if(P.cmp){const c=cmpRange(r),cc=countDays(c);lines.push(`\n# KỲ SO SÁNH (${rangeLabel(c)})\nThói quen TB ${Math.round(avg(cc.map(k=>dayScore(k)))*100)}%/ngày; việc đã gieo ${seedsIn(c)}; ngày biết ơn ${rangeDays(c).filter(gSub).length}; đơn order ${ordersIn(c).length}; ngày viết nhật ký ${rangeDays(c).filter(jHas).length}.`)}
-  return `Bạn là huấn luyện viên phát triển bản thân, phân tích sắc sảo, ấm áp và thực tế. Dưới đây là toàn bộ dữ liệu tự quản lý của tôi trong kỳ ${rangeLabel(r)} gồm: thói quen, quản lý nghiệp (gieo hạt cho khách hàng, đối tác, đồng nghiệp, thế giới, gia đình/bạn bè), nhật ký biết ơn, order vũ trụ và nhật ký ngày. Hãy tổng hợp và phân tích vấn đề chung của cả kỳ, trả lời hoàn toàn bằng tiếng Việt, súc tích, theo đúng cấu trúc markdown:
+  if(!periodHasData(r))return null;
+  const lines=Object.values(AI_SECTIONS).map(s=>`# ${s.name.toUpperCase()}\n${s.data(r)}`);
+  if(P.cmp){const c=cmpRange(r),cc=countDays(c);lines.push(`# KỲ SO SÁNH (${rangeLabel(c)})\nThói quen TB ${Math.round(avg(cc.map(k=>dayScore(k)))*100)}%/ngày; việc đã gieo ${seedsIn(c)}; ngày biết ơn ${rangeDays(c).filter(gSub).length}; đơn order ${ordersIn(c).length}; ngày viết nhật ký ${rangeDays(c).filter(jHas).length}.`)}
+  return `Dưới đây là toàn bộ dữ liệu tự quản lý của tôi trong kỳ ${rangeLabel(r)} gồm: thói quen, quản lý nghiệp (gieo hạt cho khách hàng, đối tác, đồng nghiệp, thế giới, gia đình/bạn bè), nhật ký biết ơn, order vũ trụ, nhật ký ngày và những mục tiêu lớn. Hãy tổng hợp và phân tích vấn đề chung của cả kỳ theo đúng cấu trúc markdown:
 
 ## Tổng quan kỳ báo cáo
 (3–4 câu: bức tranh chung, mức độ kỷ luật, năng lượng${P.cmp?', so sánh với kỳ trước':''})
@@ -543,37 +567,100 @@ function reportPrompt(r){
 ## Vấn đề chung cần lưu ý
 (3–5 gạch đầu dòng: khuôn mẫu lặp lại, hạng mục bị bỏ quên, khoảng cách giữa kế hoạch/mong muốn và thực tế)
 ## Mối liên hệ giữa các hạng mục
-(2–3 gạch đầu dòng, ví dụ thói quen ảnh hưởng tới cảm xúc, gieo hạt ảnh hưởng tới kết quả order)
+(2–3 gạch đầu dòng, ví dụ thói quen ảnh hưởng tới cảm xúc, gieo hạt ảnh hưởng tới kết quả order, mục tiêu lớn và việc hằng ngày)
 ## Định hướng & hành động cho kỳ tới
 (4–6 hành động cụ thể, đo được, gắn với từng hạng mục)
 
 Chỉ dựa trên dữ liệu bên dưới, không bịa thêm sự kiện; nếu dữ liệu mỏng hãy nói rõ.
 
-${lines.join('\n')}`;
+${lines.join('\n\n')}`;
 }
 function setupAI(r,ak,build,auto){
   const btn=$('#aiBtn'),note=$('#aiNote'),out=$('#aiOut'),stop=$('#aiStop');if(!btn)return;
-  if(!sampleReady)note.textContent='Đang kết nối AI…';
-  else if(!SAMPLE){btn.disabled=true;note.textContent='AI chỉ hoạt động khi mở trang trong Claude và đã đăng nhập.'}
-  else if(note.textContent==='Đang kết nối AI…')note.textContent='';
+  if(!SAMPLE&&!(sb&&ME)){btn.disabled=true;note.textContent='Hãy đăng nhập để dùng AI.'}
   let ctl;
   stop.onclick=()=>ctl?.abort();
   btn.onclick=async()=>{
-    if(!SAMPLE){toast('AI chưa sẵn sàng');return}
     const prompt=build(r);
     if(!prompt){toast('Chưa có dữ liệu trong kỳ này');note.textContent='Chưa có dữ liệu trong kỳ này để AI phân tích.';return}
     if(AI_RUNNING.has(ak))return;AI_RUNNING.add(ak);
     btn.disabled=true;stop.style.display='';note.textContent='AI đang đọc dữ liệu…';out.innerHTML='';ctl=new AbortController();
     try{
-      const {text,truncated}=await SAMPLE(prompt,{signal:ctl.signal,onText:({text})=>{if($('#aiOut')===out){out.innerHTML=md(text);note.textContent='AI đang viết…'}}});
+      const text=await aiStream([{role:'user',content:prompt}],{signal:ctl.signal,onText:t=>{if($('#aiOut')===out){out.innerHTML=md(t);note.textContent='AI đang viết…'}}});const truncated=false;
       AIRES[ak]=text;if($('#aiOut')===out){out.innerHTML=md(text);note.textContent=truncated?'Phân tích bị cắt ngắn – hãy thử kỳ ngắn hơn.':`Phân tích lúc ${new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}`}
     }catch(e){
       if(e?.text)out.innerHTML=md(e.text);
-      note.textContent=e?.code==='cancelled'?'Đã dừng.':e?.code==='not_granted'?'Bạn chưa cho phép trang dùng AI.':e?.code==='rate_limited'?'AI đang bận, hãy thử lại sau ít phút.':'Không phân tích được lúc này, hãy thử lại.';
+      note.textContent=e?.code==='not_granted'?'Bạn chưa cho phép trang dùng AI.':aiErrorText(e);
     }finally{AI_RUNNING.delete(ak);btn.disabled=false;stop.style.display='none'}
   };
   if(auto&&SAMPLE&&!AIRES[ak]&&!AI_RUNNING.has(ak)&&build(r))btn.click();
 }
+
+/* ---------- Trợ lý AI: khung chat cố định ---------- */
+/* Trong Claude (artifact) dùng window.claude; trên web dùng hàm máy chủ /api/ai (Claude API, cần đăng nhập) */
+const CHAT={msgs:[],busy:false,ctl:null};
+async function aiStream(messages,{signal,onText}={}){
+  if(SAMPLE){
+    const prompt=messages.length===1?messages[0].content:messages.map(m=>(m.role==='user'?'NGƯỜI DÙNG':'TRỢ LÝ')+':\n'+m.content).join('\n\n')+'\n\nTRỢ LÝ:';
+    const {text}=await SAMPLE(prompt,{signal,onText:({text})=>onText&&onText(text)});return text;
+  }
+  if(!sb||!ME)throw Object.assign(new Error('not_signed_in'),{code:'not_signed_in'});
+  const {data:{session}}=await sb.auth.getSession();
+  const res=await fetch('/api/ai',{method:'POST',signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+(session?.access_token||'')},
+    body:JSON.stringify({messages:messages.map(m=>({role:m.role,content:m.content}))})});
+  if(!res.ok){let code='http_'+res.status;try{code=(await res.json()).error||code}catch(e){}throw Object.assign(new Error(code),{code,status:res.status})}
+  const reader=res.body.getReader(),dec=new TextDecoder();let text='';
+  for(;;){const {done,value}=await reader.read();if(done)break;text+=dec.decode(value,{stream:true});onText&&onText(text)}
+  return text+dec.decode();
+}
+function aiErrorText(e){
+  const c=e?.code||e?.name;
+  if(c==='AbortError'||c==='cancelled')return 'Đã dừng.';
+  if(c==='ai_not_configured')return 'AI chưa được cấu hình trên máy chủ: cần thêm ANTHROPIC_API_KEY trong Vercel.';
+  if(c==='unauthorized'||e?.status===401)return 'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.';
+  if(c==='not_signed_in')return 'Hãy đăng nhập để dùng AI.';
+  if(e?.status===404)return 'Không tìm thấy dịch vụ AI (/api/ai). Khi chạy trên máy, dùng "vercel dev" thay cho "npm run dev".';
+  if(c==='rate_limited'||e?.status===429)return 'AI đang bận, hãy thử lại sau ít phút.';
+  if(c==='bad_request')return 'Cuộc trò chuyện quá dài. Bấm "Cuộc trò chuyện mới" rồi thử lại.';
+  return 'Không kết nối được AI lúc này, hãy thử lại.';
+}
+function chatOpen(){$('#aiPanel').hidden=false;document.body.classList.add('chat-open')}
+function chatClose(){$('#aiPanel').hidden=true;document.body.classList.remove('chat-open')}
+function chatRender(){
+  const box=$('#aiMsgs');
+  box.innerHTML=CHAT.msgs.length?CHAT.msgs.map(m=>m.role==='user'?`<div class="chat-msg user">${esc(m.label||m.content)}</div>`
+    :`<div class="chat-msg assistant"><div class="ai-out">${m.content?md(m.content):'<span class="ai-note">AI đang đọc dữ liệu…</span>'}</div></div>`).join('')
+    :'<div class="chat-empty">Bấm <b>✨ AI phân tích</b> ở từng hạng mục trong Báo cáo tổng hợp, hoặc hỏi trực tiếp về dữ liệu của bạn trong kỳ đang chọn.</div>';
+  box.scrollTop=box.scrollHeight;$('#aiSend').disabled=CHAT.busy;$('#aiStopChat').hidden=!CHAT.busy;
+}
+function chatReset(){CHAT.ctl?.abort();CHAT.msgs=[];CHAT.busy=false;chatClose();chatRender()}
+async function chatSend(content,label){
+  if(CHAT.busy){toast('AI đang trả lời, chờ một chút');chatOpen();return}
+  CHAT.msgs.push({role:'user',content,label});const reply={role:'assistant',content:''};CHAT.msgs.push(reply);
+  CHAT.busy=true;CHAT.ctl=new AbortController();chatOpen();chatRender();
+  const history=CHAT.msgs.filter(m=>!m.failed&&m!==reply);
+  try{
+    reply.content=await aiStream(history,{signal:CHAT.ctl.signal,onText:t=>{reply.content=t;const n=$('#aiMsgs .chat-msg.assistant:last-child .ai-out');if(n){n.innerHTML=md(t);$('#aiMsgs').scrollTop=$('#aiMsgs').scrollHeight}}});
+    if(!reply.content.trim())reply.content='(AI không trả về nội dung.)';
+  }catch(e){
+    console.error(e);reply.failed=true;reply.content=(reply.content?reply.content+'\n\n':'')+'⚠️ '+aiErrorText(e);
+  }finally{CHAT.busy=false;CHAT.ctl=null;chatRender()}
+}
+$('#aiFab').onclick=()=>{chatOpen();chatRender();setTimeout(()=>$('#aiInput').focus(),50)};
+$('#aiClose').onclick=chatClose;
+$('#aiNew').onclick=()=>{CHAT.ctl?.abort();CHAT.msgs=[];CHAT.busy=false;chatRender();$('#aiInput').focus()};
+$('#aiStopChat').onclick=()=>CHAT.ctl?.abort();
+$('#aiForm').onsubmit=e=>{
+  e.preventDefault();const q=$('#aiInput').value.trim();if(!q)return;
+  $('#aiInput').value='';$('#aiInput').style.height='';
+  /* Câu hỏi đầu tiên: kèm dữ liệu của kỳ đang chọn để AI có bối cảnh */
+  if(!CHAT.msgs.some(m=>m.role==='user'&&!m.failed)){const r=curRange();
+    chatSend(`Dữ liệu của tôi trong kỳ ${rangeLabel(r)}:\n\n${Object.values(AI_SECTIONS).map(s=>`# ${s.name.toUpperCase()}\n${s.data(r)}`).join('\n\n')}\n\nCâu hỏi của tôi: ${q}`,q);
+  }else chatSend(q);
+};
+$('#aiInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('#aiForm').requestSubmit()}});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-ai-sec]');if(!b)return;const k=b.dataset.aiSec,s=AI_SECTIONS[k],r=curRange();
+  chatSend(sectionPrompt(k,r),`✨ Phân tích: ${s.name}${s.noPeriod?'':' · '+rangeLabel(r)}`)});
 
 /* ---------- 6. Quotes ---------- */
 VIEWS.quotes=()=>{
@@ -698,6 +785,89 @@ function videoForm(v){
     Object.assign(v,{title:t,cat:$('#veCat').value,vid:id,url:ytUrl(id,$('#veUrl').value)});dirty('config');closeModal();render();toast('Đã lưu thay đổi')};
 }
 
+/* ---------- 9. Những mục tiêu lớn ---------- */
+const GOAL_PRESETS=[['Tài chính','💰'],['Sức khoẻ','💪'],['Sự nghiệp','🚀'],['Gia đình','🏡'],['Học tập','📚'],['Các mối quan hệ','🤝'],['Tâm linh','🧘'],['Trải nghiệm','🌏']];
+const GOAL_ICONS=['🎯','💰','💪','🚀','🏡','📚','🤝','🧘','🌏','❤️','🌱','⭐'];
+const GOAL_COLORS=['#16A34A','#0EA5E9','#F59E0B','#8B5CF6','#EF4444','#EC4899','#14B8A6','#64748B'];
+const gList=g=>g.items.filter(i=>(i.t||'').trim());
+const gDone=g=>gList(g).filter(i=>i.done).length;
+function goalStats(){const all=S.config.bigGoals.flatMap(gList);return{cats:S.config.bigGoals.length,total:all.length,done:all.filter(i=>i.done).length}}
+const GOALS_METRICS=()=>[
+  {label:'Hạng mục mục tiêu',fmt:'n',c:'#0F766E',noCmp:true,val:()=>goalStats().cats},
+  {label:'Mục tiêu con',fmt:'n',c:'#0EA5E9',noCmp:true,val:()=>goalStats().total},
+  {label:'Đã hoàn thành',fmt:'n',c:'var(--g2)',noCmp:true,val:()=>goalStats().done},
+  {label:'Tỉ lệ hoàn thành',fmt:'%',c:'#F59E0B',noCmp:true,val:()=>{const s=goalStats();return s.total?s.done/s.total*100:0}}];
+function addGoalCat(name,icon,color){
+  const g={id:uid(),name,icon:icon||'🎯',color:color||GOAL_COLORS[S.config.bigGoals.length%GOAL_COLORS.length],items:[{id:uid(),t:'',done:false,due:''}]};
+  S.config.bigGoals.push(g);dirty('config');render();
+  const el=document.querySelector(`[data-cat="${g.id}"] textarea`);if(el){el.focus();el.scrollIntoView({block:'center'})}
+}
+function addGoalItem(g,idx){
+  const it={id:uid(),t:'',done:false,due:''};g.items.splice(idx,0,it);dirty('config');render();
+  const el=document.querySelector(`[data-item="${it.id}"] textarea`);el&&el.focus();
+}
+function refreshGoalHeads(g){
+  const c=document.querySelector(`[data-cat="${g.id}"]`);if(!c)return;const t=gList(g).length,d=gDone(g),p=t?Math.round(d/t*100):0;
+  c.querySelector('.bg-title small').textContent=`${d}/${t} mục tiêu con hoàn thành · ${p}%`;c.querySelector('.bg-bar i').style.width=p+'%';
+  const st=goalStats(),s=document.querySelectorAll('.bg-stats .goal-item p');
+  if(s.length===3){s[0].innerHTML=`<b>${st.cats}</b>`;s[1].innerHTML=`<b>${st.total}</b>`;s[2].innerHTML=`<b>${st.done}</b> (${st.total?Math.round(st.done/st.total*100):0}%)`}
+}
+VIEWS.goals=()=>{
+  const G=S.config.bigGoals,st=goalStats(),pct=st.total?Math.round(st.done/st.total*100):0;
+  const item=it=>`<div class="bg-item ${it.done?'done':''}" data-item="${it.id}">
+     <input type="checkbox" data-f="done" ${it.done?'checked':''} aria-label="Đã hoàn thành">
+     <textarea class="bg-text" data-f="t" rows="1" placeholder="Mục tiêu con…">${esc(it.t||'')}</textarea>
+     <input type="date" class="bg-due" data-f="due" value="${esc(it.due||'')}" aria-label="Hạn hoàn thành" title="Hạn hoàn thành">
+     <button class="icon-btn" data-act="delitem" aria-label="Xoá mục tiêu con">✕</button></div>`;
+  const cat=g=>{const t=gList(g).length,d=gDone(g),p=t?Math.round(d/t*100):0;
+    return `<div class="card bg-cat" data-cat="${g.id}" style="--c:${g.color}">
+     <div class="bg-head"><span class="bg-ico">${g.icon}</span><div class="bg-title"><h3>${esc(g.name)}</h3><small>${d}/${t} mục tiêu con hoàn thành · ${p}%</small></div>
+       <button class="icon-btn" data-act="editcat" aria-label="Sửa hạng mục">✎</button><button class="icon-btn" data-act="delcat" aria-label="Xoá hạng mục">✕</button></div>
+     <div class="bg-bar"><i style="width:${p}%"></i></div>
+     <div class="bg-items">${g.items.map(item).join('')||'<p class="sub" style="margin:4px 0">Chưa có mục tiêu con.</p>'}</div>
+     <button class="btn sm bg-add" data-act="additem">+ Thêm mục tiêu con</button></div>`};
+  $('#view').innerHTML=`<div class="grid" id="bgRoot">
+   <div class="goal-pin"><div class="row"><div style="flex:1;min-width:200px"><h3>🎯 Những mục tiêu lớn</h3><div class="sub2">Chia mục tiêu dài hạn theo hạng mục (tài chính, sức khoẻ, sự nghiệp…), rồi viết các mục tiêu con cụ thể trong từng hạng mục. Nhấn Enter để thêm dòng mới.</div></div>
+     <button class="btn" id="bgAI">✨ AI phân tích</button><button class="btn" id="bgAddCat">+ Thêm hạng mục</button></div>
+     <div class="goal-grid bg-stats"><div class="goal-item"><div class="gh">Hạng mục</div><p><b>${st.cats}</b></p></div><div class="goal-item"><div class="gh">Mục tiêu con</div><p><b>${st.total}</b></p></div><div class="goal-item"><div class="gh">Đã hoàn thành</div><p><b>${st.done}</b> (${pct}%)</p></div></div></div>
+   ${G.length?`<div class="bg-grid">${G.map(cat).join('')}</div>`:`<div class="card"><div class="empty">Chưa có hạng mục nào. Chọn nhanh một hạng mục gợi ý hoặc bấm “+ Thêm hạng mục”.<div class="bg-presets">${GOAL_PRESETS.map(([n,i])=>`<button class="btn sm" data-preset="${esc(n)}" data-icon="${i}">${i} ${n}</button>`).join('')}</div></div></div>`}
+  </div>`;
+  const root=$('#bgRoot');
+  const findCat=el=>S.config.bigGoals.find(g=>g.id===el.closest('[data-cat]')?.dataset.cat);
+  const findItem=(g,el)=>g?.items.find(i=>i.id===el.closest('[data-item]')?.dataset.item);
+  $('#bgAddCat').onclick=()=>goalCatForm();
+  $('#bgAI').onclick=()=>chatSend(sectionPrompt('goals',curRange()),'✨ Phân tích: Những mục tiêu lớn');
+  root.addEventListener('input',e=>{const t=e.target;if(!t.matches('[data-f="t"]'))return;const g=findCat(t),it=findItem(g,t);if(!it)return;it.t=t.value;dirty('config');refreshGoalHeads(g)});
+  root.addEventListener('change',e=>{const t=e.target,g=findCat(t),it=findItem(g,t);if(!it)return;
+    if(t.matches('[data-f="done"]')){it.done=t.checked;t.closest('.bg-item').classList.toggle('done',it.done);dirty('config');refreshGoalHeads(g)}
+    if(t.matches('[data-f="due"]')){it.due=t.value;dirty('config')}});
+  root.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||e.shiftKey||e.isComposing||!t.matches('[data-f="t"]'))return;e.preventDefault();const g=findCat(t),it=findItem(g,t);addGoalItem(g,g.items.indexOf(it)+1)});
+  root.addEventListener('click',async e=>{
+    const p=e.target.closest('[data-preset]');if(p){addGoalCat('Mục tiêu lớn về '+p.dataset.preset.toLowerCase(),p.dataset.icon);return}
+    const b=e.target.closest('[data-act]');if(!b)return;const g=findCat(b);if(!g)return;
+    if(b.dataset.act==='additem')addGoalItem(g,g.items.length);
+    if(b.dataset.act==='editcat')goalCatForm(g);
+    if(b.dataset.act==='delitem'){const it=findItem(g,b);if((it.t||'').trim()&&!(await ask('Xoá mục tiêu con này?')))return;g.items=g.items.filter(x=>x!==it);dirty('config');render()}
+    if(b.dataset.act==='delcat'){if(!(await ask(`Xoá hạng mục “${g.name}” và toàn bộ mục tiêu con?`)))return;S.config.bigGoals=S.config.bigGoals.filter(x=>x!==g);dirty('config');render();toast('Đã xoá hạng mục')}
+  });
+};
+function goalCatForm(g){
+  const isNew=!g;let icon=g?.icon||'🎯',color=g?.color||GOAL_COLORS[S.config.bigGoals.length%GOAL_COLORS.length];
+  openModal(`<h3>${isNew?'Thêm hạng mục mục tiêu':'Sửa hạng mục'}</h3>
+   <div class="fld"><label class="lb" for="bgName">Tên hạng mục</label><input class="f" id="bgName" value="${esc(g?.name||'')}" placeholder="Ví dụ: Mục tiêu lớn về tài chính"></div>
+   ${isNew?`<div class="fld"><label class="lb">Gợi ý nhanh</label><div class="bg-presets" style="justify-content:flex-start;margin:0" id="bgPre">${GOAL_PRESETS.map(([n,i])=>`<button type="button" class="btn sm" data-n="${esc(n)}" data-i="${i}">${i} ${n}</button>`).join('')}</div></div>`:''}
+   <div class="fld"><label class="lb">Biểu tượng</label><div class="bg-icons" id="bgIco">${GOAL_ICONS.map(i=>`<button type="button" data-i="${i}" aria-pressed="${i===icon}">${i}</button>`).join('')}</div></div>
+   <div class="fld"><label class="lb">Màu</label><div class="swatches" id="bgCol">${GOAL_COLORS.map(c=>`<button type="button" data-c="${c}" style="--g:${c}" aria-pressed="${c===color}" aria-label="Màu ${c}"></button>`).join('')}</div></div>
+   <div class="row"><span class="spacer"></span><button class="btn" data-close>Huỷ</button><button class="btn primary" id="bgSave">${isNew?'Thêm hạng mục':'Lưu'}</button></div>`);
+  const setIco=i=>{icon=i;$('#bgIco').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.i===i))};
+  $('#bgIco').onclick=e=>{const b=e.target.closest('[data-i]');if(b)setIco(b.dataset.i)};
+  $('#bgCol').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;color=b.dataset.c;$('#bgCol').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.c===color))};
+  const pre=$('#bgPre');if(pre)pre.onclick=e=>{const b=e.target.closest('[data-n]');if(!b)return;$('#bgName').value='Mục tiêu lớn về '+b.dataset.n.toLowerCase();setIco(b.dataset.i)};
+  $('#bgSave').onclick=()=>{const name=$('#bgName').value.trim();if(!name){$('#bgName').focus();toast('Nhập tên hạng mục');return}
+    if(isNew){closeModal();addGoalCat(name,icon,color)}else{Object.assign(g,{name,icon,color});dirty('config');closeModal();render()}};
+  setTimeout(()=>$('#bgName').focus(),50);
+}
+
 /* ---------- 0. Report ---------- */
 VIEWS.report=()=>{
   const r=curRange(),c=cmpRange(r);
@@ -708,7 +878,7 @@ VIEWS.report=()=>{
     {l:'Đơn order vũ trụ',f:'n',v:x=>ordersIn(x).length},
     {l:'Ngày viết nhật ký',f:'n',v:x=>rangeDays(x).filter(jHas).length}];
   const ds=rangeDays(r);
-  const sec=(t,ico,col,metrics,extra='')=>`<div class="card"><div class="rep-sec" style="--c:${col}"><div class="sec-title"><h3>${ico} ${t}</h3></div>${metricCards(metrics)}${extra}</div></div>`;
+  const sec=(key,t,ico,col,metrics,extra='')=>`<div class="card"><div class="rep-sec" style="--c:${col}"><div class="sec-title"><h3>${ico} ${t}</h3><span class="spacer"></span><button class="btn sm ai-sec" data-ai-sec="${key}">✨ AI phân tích</button></div>${metricCards(metrics)}${extra}</div></div>`;
   const kTable=`<div class="mx-wrap" style="margin-top:14px"><table class="list"><thead><tr><th>Nhóm</th><th>Việc đã gieo</th>${P.cmp?'<th>Kỳ so sánh</th><th>Tăng trưởng</th>':''}<th>Mục tiêu tuần đang ghim</th></tr></thead><tbody>${KCOLS.map(k=>{const a=seedsIn(r,k.id),b=seedsIn(c,k.id);const g=S.config.karmaGoals.at(-1);
     return `<tr><td><span style="color:${k.c}">●</span> ${k.name}</td><td class="num">${a}</td>${P.cmp?`<td class="num">${b}</td><td class="num">${growth(a,b)}</td>`:''}<td>${esc(g?.goals?.[k.id]||'—')}</td></tr>`}).join('')}</tbody></table></div>`;
   const ak='rep_'+r.from+'_'+r.to+(P.cmp?'_c'+c.from+'_'+c.to:'');
@@ -719,11 +889,12 @@ VIEWS.report=()=>{
    <div class="card"><h3 style="margin-bottom:12px">Chỉ số chính</h3>
      <div class="rep-hero">${hero.map(h=>{const a=h.v(r),b=h.v(c);return `<div><b>${fmtVal(a,h.f)}</b><span>${h.l}</span>${P.cmp?`<div style="margin-top:6px">${growth(a,b)} <span style="font-size:12px;opacity:.85">so với ${fmtVal(b,h.f)}</span></div>`:''}</div>`}).join('')}</div></div>
    ${ds.length<=93?`<div class="card"><h3>Xu hướng hoàn thành thói quen theo ngày</h3><p class="sub">Bấm vào cột để mở ngày đó</p><div class="mx-wrap"><div class="trend" style="min-width:${Math.max(ds.length*14,300)}px">${ds.map(k=>{const v=Math.round(dayScore(k)*100);return `<div class="b" data-date="${k}" title="${fmtShortY(k)}: ${v}%"><i style="height:${Math.max(v,1)}%;${k>TODAY()?'opacity:.3':''}"></i><small>${ds.length<=31?+k.slice(8):''}</small></div>`}).join('')}</div></div></div>`:''}
-   ${sec('Nhật ký thói quen','🌱','var(--g3)',HABIT_METRICS(),habitTable())}
-   ${sec('Quản lý nghiệp','☯️','var(--k4)',KARMA_METRICS().filter((_,i)=>i===0||i>5),kTable)}
-   ${sec('Nhật ký biết ơn','🙏','#65A30D',GRAT_METRICS())}
-   ${sec('Order vũ trụ','✨','#0EA5E9',ORDER_METRICS())}
-   ${sec('Nhật ký ngày','📔','#F59E0B',JOURNAL_METRICS())}
+   ${sec('habits','Nhật ký thói quen','🌱','var(--g3)',HABIT_METRICS(),habitTable())}
+   ${sec('karma','Quản lý nghiệp','☯️','var(--k4)',KARMA_METRICS().filter((_,i)=>i===0||i>5),kTable)}
+   ${sec('gratitude','Nhật ký biết ơn','🙏','#65A30D',GRAT_METRICS())}
+   ${sec('order','Order vũ trụ','✨','#0EA5E9',ORDER_METRICS())}
+   ${sec('journal','Nhật ký ngày','📔','#F59E0B',JOURNAL_METRICS())}
+   ${sec('goals','Những mục tiêu lớn','🎯','#0F766E',GOALS_METRICS(),'<p class="sub" style="margin:10px 0 0">Mục tiêu lớn không phụ thuộc kỳ báo cáo.</p>')}
   </div>`;
   window.AI_HOOK=()=>setupAI(r,ak,reportPrompt,true);AI_HOOK();
 };
@@ -862,7 +1033,7 @@ function startSample(){if(sampleStarted)return;sampleStarted=true;
 async function enterApp(user){
   ME=user;const my=++syncToken;loaded=false;
   clearTimeout(saveTimer);pendingGrowth.clear();saving=false;saveAgain=false;
-  cur=TODAY();tab='habits';for(const k in AIRES)delete AIRES[k];
+  cur=TODAY();tab='habits';for(const k in AIRES)delete AIRES[k];chatReset();
   S={config:normalizeConfig(null),months:{}};
   document.body.classList.remove('locked');$('#auth').innerHTML='';
   render();setTimeout(maybePopup,400);startSample();
@@ -885,7 +1056,7 @@ async function enterApp(user){
 }
 async function logout(){
   if(loaded){clearTimeout(saveTimer);await flush()}
-  syncToken++;ME=null;loaded=false;S={config:normalizeConfig(null),months:{}};
+  syncToken++;ME=null;loaded=false;S={config:normalizeConfig(null),months:{}};chatReset();
   if(sb)await sb.auth.signOut();
   showAuth();toast('Đã đăng xuất');
 }
@@ -920,6 +1091,19 @@ VIEWS.account=()=>{
   $('#accPw').onclick=pwForm;
   $('#accOut').onclick=logout;
 };
+
+/* ---------- Hiển thị trên điện thoại: nhãn cột cho bảng, ô nhập tự giãn theo nội dung ---------- */
+function labelTables(root){
+  root.querySelectorAll('table.list,table.order').forEach(t=>{
+    const heads=[...t.querySelectorAll('thead th')].map(th=>th.textContent.trim());
+    t.querySelectorAll('tbody tr').forEach(tr=>[...tr.children].forEach((td,i)=>{const l=heads[i]||'';if(td.dataset.label!==l)td.dataset.label=l}));
+  });
+}
+function autosize(el){if(!el||el.tagName!=='TEXTAREA'||!el.offsetParent)return;el.style.height='auto';el.style.height=Math.min(el.scrollHeight+2,Math.round(innerHeight*0.7))+'px'}
+let fitTimer=null;
+new MutationObserver(()=>{clearTimeout(fitTimer);fitTimer=setTimeout(()=>{labelTables($('#view'));$('#view').querySelectorAll('textarea').forEach(autosize)},30)}).observe($('#view'),{childList:true,subtree:true});
+document.addEventListener('input',e=>autosize(e.target));
+addEventListener('resize',()=>{clearTimeout(fitTimer);fitTimer=setTimeout(()=>$('#view').querySelectorAll('textarea').forEach(autosize),150)});
 
 /* ---------- Boot ---------- */
 let recovering=location.hash.includes('type=recovery');
